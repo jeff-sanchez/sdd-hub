@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SDD Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --surface: #171717;
+  --surface2: #1f1f1f;
+  --border: #2a2a2a;
+  --border2: #333;
+  --text: #e8e8e8;
+  --text2: #888;
+  --text3: #555;
+  --green: #22c55e;
+  --green-dim: #16a34a22;
+  --green-border: #16a34a55;
+  --amber: #f59e0b;
+  --amber-dim: #f59e0b18;
+  --red: #ef4444;
+  --accent: #22c55e;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); }
+
+.app { max-width: 430px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+
+/* HEADER */
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.25rem 1.25rem 0;
+}
+.logo { font-family: var(--mono); font-size: 13px; color: var(--text2); letter-spacing: 0.08em; }
+.logo span { color: var(--green); }
+.version { font-family: var(--mono); font-size: 10px; color: var(--text3); background: var(--surface2); padding: 3px 8px; border-radius: 4px; border: 0.5px solid var(--border); }
+
+/* VIEWS */
+.view { display: none; flex-direction: column; flex: 1; padding: 1.25rem; padding-top: 1rem; }
+.view.active { display: flex; }
+
+/* HOME */
+.home-title { font-size: 22px; font-weight: 300; color: var(--text); margin: 1.5rem 0 0.25rem; line-height: 1.2; }
+.home-title strong { font-weight: 500; }
+.home-sub { font-size: 13px; color: var(--text2); margin-bottom: 1.75rem; }
+
+.section-label {
+  font-family: var(--mono); font-size: 10px; color: var(--text3);
+  letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.75rem;
+}
+
+.project-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.5rem; }
+
+.project-item {
+  background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: 12px; padding: 1rem 1.1rem; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative; overflow: hidden;
+}
+.project-item::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--green); border-radius: 12px 0 0 12px;
+}
+.project-item:active { background: var(--surface2); }
+.project-item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
+.project-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.project-badge {
+  font-family: var(--mono); font-size: 10px; padding: 2px 8px;
+  border-radius: 4px; border: 0.5px solid var(--green-border);
+  background: var(--green-dim); color: var(--green);
+}
+.project-badge.locked { border-color: var(--border); background: transparent; color: var(--text3); }
+
+.progress-track { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 0.6rem; }
+.progress-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.4s ease; }
+
+.project-meta { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+.project-meta span { color: var(--text2); }
+
+.new-project-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 13px; border-radius: 12px;
+  border: 0.5px dashed var(--border2); background: transparent;
+  color: var(--text3); font-family: var(--sans); font-size: 13px; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.new-project-btn:hover { border-color: var(--green); color: var(--green); }
+.new-project-btn:active { background: var(--green-dim); }
+
+/* PROJECT VIEW */
+.back-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 1.25rem;
+  cursor: pointer; color: var(--text3); font-size: 13px;
+  transition: color 0.15s;
+}
+.back-row:hover { color: var(--text2); }
+.back-icon { font-size: 16px; line-height: 1; }
+
+.project-view-title { font-size: 18px; font-weight: 500; margin-bottom: 0.25rem; }
+.project-view-sub { font-size: 13px; color: var(--text2); margin-bottom: 1.5rem; }
+
+.phase-list { display: flex; flex-direction: column; gap: 8px; }
+
+.phase-row {
+  background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: 10px; padding: 0.9rem 1rem; cursor: pointer;
+  display: flex; align-items: center; gap: 12px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.phase-row:active { background: var(--surface2); }
+.phase-row.is-active { border-color: var(--green-border); }
+.phase-row.is-done { opacity: 0.6; }
+.phase-row.is-locked { opacity: 0.35; cursor: default; }
+
+.phase-dot {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 11px;
+}
+.dot-done { background: var(--green); color: #000; font-weight: 500; }
+.dot-active { background: var(--green-dim); border: 1px solid var(--green-border); color: var(--green); }
+.dot-pending { background: var(--surface2); border: 0.5px solid var(--border2); color: var(--text3); }
+.dot-locked { background: var(--surface2); border: 0.5px solid var(--border); color: var(--text3); }
+
+.phase-info { flex: 1; }
+.phase-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+.phase-desc { font-size: 11px; color: var(--text3); }
+
+.phase-arrow { color: var(--text3); font-size: 14px; }
+
+/* PHASE DETAIL */
+.phase-detail-header { margin-bottom: 1.25rem; }
+.phase-detail-title { font-size: 16px; font-weight: 500; margin-bottom: 0.25rem; }
+.phase-detail-desc { font-size: 12px; color: var(--text2); }
+
+.locked-notice {
+  background: var(--surface2); border: 0.5px solid var(--border);
+  border-radius: 10px; padding: 1.25rem; text-align: center;
+  font-size: 13px; color: var(--text3); line-height: 1.6;
+}
+.locked-notice strong { color: var(--text2); display: block; margin-bottom: 4px; font-weight: 500; }
+
+.gate-section { margin-bottom: 1.25rem; }
+.gate-section-label { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
+
+.gate-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 0; border-bottom: 0.5px solid var(--border);
+}
+.gate-item:last-child { border-bottom: none; }
+
+.gate-check {
+  width: 20px; height: 20px; border-radius: 5px; flex-shrink: 0;
+  border: 0.5px solid var(--border2); background: var(--surface2);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  margin-top: 1px; transition: background 0.15s, border-color 0.15s;
+}
+.gate-check.checked { background: var(--green); border-color: var(--green); }
+.gate-check.checked::after {
+  content: ''; display: block; width: 5px; height: 9px;
+  border: 1.5px solid #000; border-top: none; border-left: none;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+.gate-text { font-size: 13px; color: var(--text); line-height: 1.5; flex: 1; }
+.gate-text.is-done { color: var(--text3); text-decoration: line-through; }
+
+.progress-summary {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1rem; padding: 0.75rem 1rem;
+  background: var(--surface); border: 0.5px solid var(--border); border-radius: 8px;
+}
+.progress-label { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+.progress-count { font-family: var(--mono); font-size: 13px; color: var(--text2); }
+.progress-count span { color: var(--green); }
+
+.action-btn {
+  width: 100%; padding: 13px; border-radius: 10px; border: none;
+  font-family: var(--sans); font-size: 14px; font-weight: 500; cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  margin-bottom: 8px;
+}
+.action-btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--green); color: #000; }
+.btn-primary:disabled { opacity: 0.3; cursor: default; }
+.btn-secondary {
+  background: transparent; color: var(--text2);
+  border: 0.5px solid var(--border2) !important; border: none;
+}
+.btn-secondary:hover { border-color: var(--border2); color: var(--text); }
+
+/* NEW PROJECT FORM */
+.form-title { font-size: 18px; font-weight: 500; margin-bottom: 0.25rem; }
+.form-sub { font-size: 13px; color: var(--text2); margin-bottom: 1.75rem; }
+
+.form-group { margin-bottom: 1.25rem; }
+.form-label { font-family: var(--mono); font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; display: block; }
+.form-input {
+  width: 100%; padding: 11px 14px; border-radius: 8px;
+  border: 0.5px solid var(--border2); background: var(--surface2);
+  color: var(--text); font-family: var(--sans); font-size: 14px;
+  outline: none; transition: border-color 0.15s;
+}
+.form-input:focus { border-color: var(--green); }
+.form-textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+.form-hint { font-size: 11px; color: var(--text3); margin-top: 0.4rem; line-height: 1.5; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--surface); border: 0.5px solid var(--green-border);
+  color: var(--text); padding: 10px 20px; border-radius: 100px;
+  font-size: 13px; font-family: var(--mono); white-space: nowrap;
+  transition: transform 0.3s ease; z-index: 100;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* DECISION LOG */
+.log-item {
+  padding: 0.75rem 0; border-bottom: 0.5px solid var(--border);
+}
+.log-item:last-child { border-bottom: none; }
+.log-date { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-bottom: 4px; }
+.log-decision { font-size: 13px; color: var(--text); line-height: 1.5; }
+.log-reason { font-size: 12px; color: var(--text3); margin-top: 3px; }
+
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--text3); font-size: 13px; }
+
+/* BOTTOM NAV */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--surface); border-top: 0.5px solid var(--border);
+  display: flex; padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  max-width: 430px; margin: 0 auto;
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: 3px; cursor: pointer; padding: 6px 0;
+  color: var(--text3); font-size: 10px; font-family: var(--mono);
+  transition: color 0.15s;
+}
+.nav-item.active { color: var(--green); }
+.nav-icon { font-size: 18px; line-height: 1; }
+
+.content-pad { padding-bottom: 80px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top-bar">
+    <div class="logo">SDD<span>.</span>HUB</div>
+    <div class="version">v1.0</div>
+  </div>
+
+  <!-- HOME VIEW -->
+  <div class="view active content-pad" id="view-home">
+    <div class="home-title">Gestão de<br><strong>projetos SDD</strong></div>
+    <div class="home-sub">Spec-Driven Development — nenhuma fase avança sem gate aprovado.</div>
+
+    <div class="section-label">Projetos ativos</div>
+    <div class="project-list" id="project-list"></div>
+    <button class="new-project-btn" onclick="showView('view-new')">
+      <span>+</span> Novo projeto
+    </button>
+  </div>
+
+  <!-- PROJECT VIEW -->
+  <div class="view content-pad" id="view-project">
+    <div class="back-row" onclick="showView('view-home')">
+      <span class="back-icon">←</span> Todos os projetos
+    </div>
+    <div class="project-view-title" id="pv-title"></div>
+    <div class="project-view-sub" id="pv-sub"></div>
+    <div class="section-label">Fases do projeto</div>
+    <div class="phase-list" id="pv-phases"></div>
+  </div>
+
+  <!-- PHASE DETAIL VIEW -->
+  <div class="view content-pad" id="view-phase">
+    <div class="back-row" id="phase-back-btn">
+      <span class="back-icon">←</span> <span id="phase-back-label">Voltar</span>
+    </div>
+    <div class="phase-detail-header">
+      <div class="phase-detail-title" id="pd-title"></div>
+      <div class="phase-detail-desc" id="pd-desc"></div>
+    </div>
+    <div id="pd-content"></div>
+  </div>
+
+  <!-- NEW PROJECT VIEW -->
+  <div class="view content-pad" id="view-new">
+    <div class="back-row" onclick="showView('view-home')">
+      <span class="back-icon">←</span> Cancelar
+    </div>
+    <div class="form-title">Novo projeto</div>
+    <div class="form-sub">Preencha o briefing para iniciar a Fase 0.</div>
+    <div class="form-group">
+      <label class="form-label">Nome do projeto</label>
+      <input class="form-input" id="np-name" type="text" placeholder="Ex: Portal de Instrutores">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Qual dor este projeto resolve?</label>
+      <textarea class="form-input form-textarea" id="np-problem" placeholder="Descreva o problema central..."></textarea>
+      <div class="form-hint">Seja específico. Projetos com problem statement vago travam no PRD.</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Objetivo central (mensurável)</label>
+      <input class="form-input" id="np-goal" type="text" placeholder="Ex: Reduzir tempo de relatório de 2h para 15min">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Responsável</label>
+      <input class="form-input" id="np-owner" type="text" placeholder="Jefferson" value="Jefferson">
+    </div>
+    <button class="action-btn btn-primary" onclick="createProject()">Criar projeto e iniciar Fase 0</button>
+  </div>
+
+  <!-- DECISION LOG VIEW -->
+  <div class="view content-pad" id="view-log">
+    <div class="home-title" style="margin-top:1rem">Decision<br><strong>Log</strong></div>
+    <div class="home-sub">Registro de todas as decisões técnicas por projeto.</div>
+    <div id="log-content"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-home" onclick="navTo('home')">
+      <div class="nav-icon">⊞</div>
+      <div>projetos</div>
+    </div>
+    <div class="nav-item" id="nav-log" onclick="navTo('log')">
+      <div class="nav-icon">◎</div>
+      <div>decisões</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PHASE_TEMPLATES = [
+  {
+    id: 0, label: 'Fase 0', title: 'Briefing',
+    desc: 'Problem statement e objetivo aprovados',
+    gates: [
+      'Problem statement descreve a dor real e específica',
+      'Objetivo é mensurável (tem número ou critério claro)',
+      'Jefferson aprovou o briefing'
+    ]
+  },
+  {
+    id: 1, label: 'Fase 1', title: 'Requisitos',
+    desc: 'RF, RNF, restrições e regras de negócio',
+    gates: [
+      'Requisitos Funcionais cobrem todas as funcionalidades críticas',
+      'Requisitos Não-Funcionais têm critérios mensuráveis',
+      'Restrições documentadas (o que não pode mudar)',
+      'Regras de negócio específicas do domínio documentadas',
+      'Campos protegidos e auditáveis definidos',
+      'Jefferson aprovou os requisitos'
+    ]
+  },
+  {
+    id: 2, label: 'Fase 2', title: 'PRD',
+    desc: 'Escopo fechado, casos de uso e critérios de aceite',
+    gates: [
+      'Escopo definido sem ambiguidade (dentro e fora)',
+      'Casos de uso cobrem todos os usuários reais',
+      'Critérios de aceitação são testáveis por funcionalidade',
+      'Jefferson aprovou o PRD'
+    ]
+  },
+  {
+    id: 3, label: 'Fase 3', title: 'Design técnico',
+    desc: 'Arquitetura, contratos e plano de rollback',
+    gates: [
+      'Arquitetura reflete o estado real do sistema',
+      'Decisões técnicas documentadas com justificativa',
+      'Contratos de interface definidos (entradas e saídas)',
+      'Plano de rollback definido para cada componente crítico',
+      'Jefferson aprovou o design'
+    ]
+  },
+  {
+    id: 4, label: 'Fase 4', title: 'Implementação',
+    desc: 'Backlog priorizado e critérios de aceite validados',
+    gates: [
+      'Todos os itens críticos do backlog entregues',
+      'Critérios de aceitação testados e aprovados',
+      'Nenhuma regressão nas funcionalidades existentes',
+      'Documentação técnica atualizada',
+      'Jefferson aprovou a entrega'
+    ]
+  },
+  {
+    id: 5, label: 'Fase 5', title: 'Revisão pós-deploy',
+    desc: 'Lições aprendidas e legado atualizado',
+    gates: [
+      'O que funcionou conforme a spec está documentado',
+      'Desvios registrados como novos requisitos ou decisões',
+      'Documentação de legado atualizada',
+      'Skill/base de conhecimento sincronizada'
+    ]
+  }
+];
+
+let state = loadState();
+let currentProject = null;
+let currentPhase = null;
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('sdd-hub-v1');
+    return s ? JSON.parse(s) : { projects: [], decisions: [] };
+  } catch(e) { return { projects: [], decisions: [] }; }
+}
+
+function saveState() {
+  localStorage.setItem('sdd-hub-v1', JSON.stringify(state));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function navTo(tab) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('nav-' + tab).classList.add('active');
+  if (tab === 'home') { renderHome(); showView('view-home'); }
+  if (tab === 'log') { renderLog(); showView('view-log'); }
+}
+
+function getActivePhaseIndex(project) {
+  for (let i = 0; i < project.phases.length; i++) {
+    if (project.phases[i].status === 'active') return i;
+  }
+  return project.phases.filter(p => p.status === 'done').length;
+}
+
+function getProgressPct(project) {
+  const done = project.phases.filter(p => p.status === 'done').length;
+  return Math.round(done / project.phases.length * 100);
+}
+
+function renderHome() {
+  const list = document.getElementById('project-list');
+  if (!state.projects.length) {
+    list.innerHTML = '<div class="empty-state">Nenhum projeto ainda.<br>Crie o primeiro abaixo.</div>';
+    return;
+  }
+  list.innerHTML = state.projects.map((p, idx) => {
+    const pct = getProgressPct(p);
+    const activeIdx = getActivePhaseIndex(p);
+    const activePhase = PHASE_TEMPLATES[activeIdx] || PHASE_TEMPLATES[5];
+    const allDone = p.phases.every(ph => ph.status === 'done');
+    return `<div class="project-item" onclick="openProject(${idx})">
+      <div class="project-item-header">
+        <div class="project-name">${p.name}</div>
+        <div class="project-badge ${allDone ? 'locked' : ''}">${allDone ? 'concluído' : 'ativo'}</div>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="project-meta">fase atual: <span>${activePhase.label} — ${activePhase.title}</span> · <span>${pct}%</span></div>
+    </div>`;
+  }).join('');
+}
+
+function openProject(idx) {
+  currentProject = idx;
+  const p = state.projects[idx];
+  document.getElementById('pv-title').textContent = p.name;
+  document.getElementById('pv-sub').textContent = p.problem;
+  renderProjectPhases(p);
+  showView('view-project');
+}
+
+function renderProjectPhases(p) {
+  const list = document.getElementById('pv-phases');
+  list.innerHTML = p.phases.map((ph, i) => {
+    const tmpl = PHASE_TEMPLATES[i];
+    const doneCount = ph.gates.filter(g => g).length;
+    const total = tmpl.gates.length;
+    let dotClass = 'dot-locked', rowClass = 'is-locked';
+    let dotContent = '—';
+    if (ph.status === 'done') { dotClass = 'dot-done'; rowClass = 'is-done'; dotContent = '✓'; }
+    else if (ph.status === 'active') { dotClass = 'dot-active'; rowClass = 'is-active'; dotContent = tmpl.id; }
+    else if (ph.status === 'pending') { dotClass = 'dot-pending'; rowClass = ''; dotContent = tmpl.id; }
+    const clickable = ph.status !== 'locked';
+    return `<div class="phase-row ${rowClass}" onclick="${clickable ? `openPhase(${i})` : ''}">
+      <div class="phase-dot ${dotClass}">${dotContent}</div>
+      <div class="phase-info">
+        <div class="phase-title">${tmpl.label} — ${tmpl.title}</div>
+        <div class="phase-desc">${ph.status === 'done' ? 'Concluído' : ph.status === 'active' ? `${doneCount}/${total} gates` : ph.status === 'locked' ? 'Bloqueado' : 'Aguardando'}</div>
+      </div>
+      ${clickable ? '<div class="phase-arrow">›</div>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function openPhase(phaseIdx) {
+  currentPhase = phaseIdx;
+  const p = state.projects[currentProject];
+  const ph = p.phases[phaseIdx];
+  const tmpl = PHASE_TEMPLATES[phaseIdx];
+
+  document.getElementById('pd-title').textContent = `${tmpl.label} — ${tmpl.title}`;
+  document.getElementById('pd-desc').textContent = tmpl.desc;
+  document.getElementById('phase-back-label').textContent = p.name;
+  document.getElementById('phase-back-btn').onclick = () => { openProject(currentProject); };
+
+  const content = document.getElementById('pd-content');
+
+  if (ph.status === 'locked') {
+    content.innerHTML = `<div class="locked-notice">
+      <strong>Fase bloqueada</strong>
+      Complete e aprove a fase anterior para desbloquear esta etapa.
+    </div>`;
+    showView('view-phase');
+    return;
+  }
+
+  const doneCount = ph.gates.filter(g => g).length;
+  const total = tmpl.gates.length;
+  const allDone = doneCount === total;
+
+  let html = `<div class="progress-summary">
+    <div class="progress-label">gates concluídos</div>
+    <div class="progress-count"><span>${doneCount}</span> / ${total}</div>
+  </div>
+  <div class="gate-section">
+    <div class="gate-section-label">Checklist obrigatório</div>
+    ${tmpl.gates.map((g, i) => `
+      <div class="gate-item">
+        <div class="gate-check ${ph.gates[i] ? 'checked' : ''}" onclick="toggleGate(${phaseIdx}, ${i})"></div>
+        <div class="gate-text ${ph.gates[i] ? 'is-done' : ''}">${g}</div>
+      </div>`).join('')}
+  </div>`;
+
+  if (ph.status !== 'done') {
+    html += `<button class="action-btn btn-primary" ${allDone ? '' : 'disabled'} onclick="advancePhase(${phaseIdx})">
+      Concluir fase e liberar próxima
+    </button>`;
+  } else {
+    html += `<div style="text-align:center;padding:1rem;font-family:var(--mono);font-size:12px;color:var(--green)">✓ fase concluída</div>`;
+  }
+
+  content.innerHTML = html;
+  showView('view-phase');
+}
+
+function toggleGate(phaseIdx, gateIdx) {
+  const p = state.projects[currentProject];
+  const ph = p.phases[phaseIdx];
+  if (ph.status === 'done' || ph.status === 'locked') return;
+  ph.gates[gateIdx] = !ph.gates[gateIdx];
+  saveState();
+  openPhase(phaseIdx);
+}
+
+function advancePhase(phaseIdx) {
+  const p = state.projects[currentProject];
+  const ph = p.phases[phaseIdx];
+  if (!ph.gates.every(g => g)) return;
+  ph.status = 'done';
+  if (phaseIdx + 1 < p.phases.length) {
+    p.phases[phaseIdx + 1].status = phaseIdx + 2 < p.phases.length ? 'active' : 'active';
+  }
+  saveState();
+  showToast('Fase concluída. Próxima desbloqueada.');
+  openProject(currentProject);
+}
+
+function createProject() {
+  const name = document.getElementById('np-name').value.trim();
+  const problem = document.getElementById('np-problem').value.trim();
+  const goal = document.getElementById('np-goal').value.trim();
+  const owner = document.getElementById('np-owner').value.trim() || 'Jefferson';
+
+  if (!name || !problem || !goal) {
+    showToast('Preencha todos os campos.');
+    return;
+  }
+
+  const phases = PHASE_TEMPLATES.map((t, i) => ({
+    status: i === 0 ? 'active' : i === 1 ? 'pending' : 'locked',
+    gates: new Array(t.gates.length).fill(false)
+  }));
+
+  state.projects.push({ name, problem, goal, owner, createdAt: new Date().toISOString(), phases });
+  saveState();
+
+  document.getElementById('np-name').value = '';
+  document.getElementById('np-problem').value = '';
+  document.getElementById('np-goal').value = '';
+
+  showToast('Projeto criado. Fase 0 iniciada.');
+  openProject(state.projects.length - 1);
+  document.getElementById('nav-home').classList.add('active');
+  document.getElementById('nav-log').classList.remove('active');
+}
+
+function renderLog() {
+  const el = document.getElementById('log-content');
+  const decisions = state.decisions || [];
+  if (!decisions.length) {
+    el.innerHTML = '<div class="empty-state">Nenhuma decisão registrada ainda.</div>';
+    return;
+  }
+  el.innerHTML = decisions.map(d => `
+    <div class="log-item">
+      <div class="log-date">${d.date} · ${d.project}</div>
+      <div class="log-decision">${d.decision}</div>
+      <div class="log-reason">${d.reason}</div>
+    </div>`).join('');
+}
+
+// Seed CRJ Ops Hub
+function seedCRJ() {
+  if (state.projects.find(p => p.name === 'CRJ Ops Hub')) return;
+  const phases = PHASE_TEMPLATES.map((t, i) => {
+    if (i === 0) return { status: 'done', gates: new Array(t.gates.length).fill(true) };
+    if (i === 1) return {
+      status: 'active',
+      gates: [true, true, true, true, true, false]
+    };
+    if (i === 2) return { status: 'pending', gates: new Array(t.gates.length).fill(false) };
+    return { status: 'locked', gates: new Array(t.gates.length).fill(false) };
+  });
+  state.projects.unshift({
+    name: 'CRJ Ops Hub',
+    problem: 'Sistema nativo do CRJ é instável. A gestão de múltiplas unidades (JAC, MAN, VP, PPG) exige controle de presenças, instrutores, elegibilidade para formatura e fila de espera — funcionalidades que a plataforma atual não entrega com confiabilidade.',
+    goal: 'Substituir dependência da plataforma nativa por sistema próprio em Google Workspace, com scraping Python, Sheets como banco central e Looker Studio para visualização.',
+    owner: 'Jefferson',
+    createdAt: '2026-04-07T00:00:00.000Z',
+    phases
+  });
+  state.decisions = [
+    { date: '07/04/2026', project: 'CRJ Ops Hub', decision: 'Matrícula numérica como chave universal de junção', reason: 'ID estável e único. CPF mantido como fallback por ser dado sensível.' },
+    { date: '07/04/2026', project: 'CRJ Ops Hub', decision: 'Credenciais migradas para .env — nunca hardcoded', reason: 'Segurança básica. Evita exposição acidental em logs ou Git.' },
+    { date: '07/04/2026', project: 'CRJ Ops Hub', decision: 'Sleep 2000ms a cada 20 eventos no Calendar API', reason: 'Resolve rate limit sem impacto significativo no tempo de execução.' },
+    { date: '07/04/2026', project: 'CRJ Ops Hub', decision: 'Régua de fila de espera: faixa etária → data inscrição → histórico → horário → geografia → NIS', reason: 'Decisão tomada com Jefferson em 07/04/2026 após análise das regras de negócio do CRJ.' }
+  ];
+  saveState();
+}
+
+seedCRJ();
+renderHome();
+</script>
+</body>
+</html>
