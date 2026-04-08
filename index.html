@@ -2,661 +2,1060 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SDD Hub</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0f0f0f;
-  --surface: #171717;
-  --surface2: #1f1f1f;
-  --border: #2a2a2a;
+  --bg: #0c0c0c;
+  --surface: #161616;
+  --surface2: #1e1e1e;
+  --surface3: #252525;
+  --border: #272727;
   --border2: #333;
-  --text: #e8e8e8;
+  --border3: #3d3d3d;
+  --text: #e2e2e2;
   --text2: #888;
-  --text3: #555;
+  --text3: #4a4a4a;
   --green: #22c55e;
-  --green-dim: #16a34a22;
-  --green-border: #16a34a55;
+  --green-dim: rgba(34,197,94,0.1);
+  --green-border: rgba(34,197,94,0.25);
   --amber: #f59e0b;
-  --amber-dim: #f59e0b18;
+  --amber-dim: rgba(245,158,11,0.1);
   --red: #ef4444;
-  --accent: #22c55e;
+  --red-dim: rgba(239,68,68,0.1);
+  --blue: #3b82f6;
+  --blue-dim: rgba(59,130,246,0.1);
   --mono: 'DM Mono', monospace;
   --sans: 'DM Sans', sans-serif;
+  --radius: 10px;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%;background:var(--bg)}
+body{font-family:var(--sans);color:var(--text);min-height:100%;background:var(--bg)}
+button{font-family:var(--sans);cursor:pointer}
+input,textarea{font-family:var(--sans)}
 
-.app { max-width: 430px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+/* LAYOUT */
+.app{max-width:440px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative}
+.view{display:none;flex-direction:column;flex:1;padding:1.25rem;padding-bottom:90px}
+.view.active{display:flex}
+.page-scroll{overflow-y:auto}
 
-/* HEADER */
-.top-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1.25rem 1.25rem 0;
-}
-.logo { font-family: var(--mono); font-size: 13px; color: var(--text2); letter-spacing: 0.08em; }
-.logo span { color: var(--green); }
-.version { font-family: var(--mono); font-size: 10px; color: var(--text3); background: var(--surface2); padding: 3px 8px; border-radius: 4px; border: 0.5px solid var(--border); }
+/* TOP BAR */
+.top-bar{padding:1rem 1.25rem 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.logo{font-family:var(--mono);font-size:12px;color:var(--text2);letter-spacing:.1em}
+.logo em{color:var(--green);font-style:normal}
+.top-actions{display:flex;gap:8px;align-items:center}
+.mode-badge{font-family:var(--mono);font-size:10px;padding:3px 10px;border-radius:20px;border:0.5px solid;cursor:pointer;transition:all .2s}
+.mode-badge.public{border-color:var(--border2);color:var(--text3);background:transparent}
+.mode-badge.private{border-color:var(--green-border);color:var(--green);background:var(--green-dim)}
 
-/* VIEWS */
-.view { display: none; flex-direction: column; flex: 1; padding: 1.25rem; padding-top: 1rem; }
-.view.active { display: flex; }
+/* NAV */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;background:rgba(12,12,12,0.95);backdrop-filter:blur(12px);border-top:0.5px solid var(--border);display:flex;z-index:100;padding:6px 0 calc(6px + env(safe-area-inset-bottom))}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0;cursor:pointer;color:var(--text3);font-family:var(--mono);font-size:9px;letter-spacing:.05em;transition:color .15s;border:none;background:none}
+.nav-item.active{color:var(--green)}
+.nav-icon{font-size:16px;line-height:1}
 
-/* HOME */
-.home-title { font-size: 22px; font-weight: 300; color: var(--text); margin: 1.5rem 0 0.25rem; line-height: 1.2; }
-.home-title strong { font-weight: 500; }
-.home-sub { font-size: 13px; color: var(--text2); margin-bottom: 1.75rem; }
+/* HEADINGS */
+.view-title{font-size:22px;font-weight:300;color:var(--text);margin:1.25rem 0 .25rem;line-height:1.2}
+.view-title strong{font-weight:500}
+.view-sub{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:1.5rem}
 
-.section-label {
-  font-family: var(--mono); font-size: 10px; color: var(--text3);
-  letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.75rem;
-}
+/* LABELS */
+.label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem;margin-top:1.25rem}
+.label:first-child{margin-top:0}
 
-.project-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.5rem; }
+/* CARDS */
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:1rem 1.1rem;margin-bottom:.75rem}
+.card-clickable{cursor:pointer;transition:border-color .15s,background .15s}
+.card-clickable:active{background:var(--surface2)}
 
-.project-item {
-  background: var(--surface); border: 0.5px solid var(--border);
-  border-radius: 12px; padding: 1rem 1.1rem; cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  position: relative; overflow: hidden;
-}
-.project-item::before {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-  width: 3px; background: var(--green); border-radius: 12px 0 0 12px;
-}
-.project-item:active { background: var(--surface2); }
-.project-item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
-.project-name { font-size: 14px; font-weight: 500; color: var(--text); }
-.project-badge {
-  font-family: var(--mono); font-size: 10px; padding: 2px 8px;
-  border-radius: 4px; border: 0.5px solid var(--green-border);
-  background: var(--green-dim); color: var(--green);
-}
-.project-badge.locked { border-color: var(--border); background: transparent; color: var(--text3); }
+/* PROJECT CARD */
+.proj-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.proj-name{font-size:14px;font-weight:500}
+.proj-badge{font-family:var(--mono);font-size:10px;padding:2px 9px;border-radius:20px}
+.badge-active{background:var(--green-dim);border:0.5px solid var(--green-border);color:var(--green)}
+.badge-done{background:var(--surface2);border:0.5px solid var(--border2);color:var(--text3)}
+.badge-public{background:var(--blue-dim);border:0.5px solid rgba(59,130,246,.25);color:var(--blue)}
 
-.progress-track { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 0.6rem; }
-.progress-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.4s ease; }
+.prog-track{height:2px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:.6rem}
+.prog-fill{height:100%;background:var(--green);border-radius:2px;transition:width .4s ease}
+.proj-meta{font-family:var(--mono);font-size:11px;color:var(--text3)}
+.proj-meta span{color:var(--text2)}
 
-.project-meta { font-family: var(--mono); font-size: 11px; color: var(--text3); }
-.project-meta span { color: var(--text2); }
+/* PHASE ROW */
+.phase-row{display:flex;align-items:center;gap:12px;padding:.85rem 1rem;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);margin-bottom:6px;cursor:pointer;transition:border-color .15s}
+.phase-row.ph-active{border-color:var(--green-border)}
+.phase-row.ph-done{opacity:.55}
+.phase-row.ph-locked{opacity:.3;cursor:default}
+.phase-row.ph-pending{opacity:.7}
 
-.new-project-btn {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; padding: 13px; border-radius: 12px;
-  border: 0.5px dashed var(--border2); background: transparent;
-  color: var(--text3); font-family: var(--sans); font-size: 13px; cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-}
-.new-project-btn:hover { border-color: var(--green); color: var(--green); }
-.new-project-btn:active { background: var(--green-dim); }
+.ph-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;flex-shrink:0}
+.dot-done{background:var(--green);color:#000;font-weight:500}
+.dot-active{background:var(--green-dim);border:1px solid var(--green-border);color:var(--green)}
+.dot-pending{background:var(--surface2);border:0.5px solid var(--border2);color:var(--text3)}
+.dot-locked{background:var(--surface2);border:0.5px solid var(--border);color:var(--text3)}
 
-/* PROJECT VIEW */
-.back-row {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 1.25rem;
-  cursor: pointer; color: var(--text3); font-size: 13px;
-  transition: color 0.15s;
-}
-.back-row:hover { color: var(--text2); }
-.back-icon { font-size: 16px; line-height: 1; }
-
-.project-view-title { font-size: 18px; font-weight: 500; margin-bottom: 0.25rem; }
-.project-view-sub { font-size: 13px; color: var(--text2); margin-bottom: 1.5rem; }
-
-.phase-list { display: flex; flex-direction: column; gap: 8px; }
-
-.phase-row {
-  background: var(--surface); border: 0.5px solid var(--border);
-  border-radius: 10px; padding: 0.9rem 1rem; cursor: pointer;
-  display: flex; align-items: center; gap: 12px;
-  transition: border-color 0.15s, background 0.15s;
-}
-.phase-row:active { background: var(--surface2); }
-.phase-row.is-active { border-color: var(--green-border); }
-.phase-row.is-done { opacity: 0.6; }
-.phase-row.is-locked { opacity: 0.35; cursor: default; }
-
-.phase-dot {
-  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono); font-size: 11px;
-}
-.dot-done { background: var(--green); color: #000; font-weight: 500; }
-.dot-active { background: var(--green-dim); border: 1px solid var(--green-border); color: var(--green); }
-.dot-pending { background: var(--surface2); border: 0.5px solid var(--border2); color: var(--text3); }
-.dot-locked { background: var(--surface2); border: 0.5px solid var(--border); color: var(--text3); }
-
-.phase-info { flex: 1; }
-.phase-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
-.phase-desc { font-size: 11px; color: var(--text3); }
-
-.phase-arrow { color: var(--text3); font-size: 14px; }
+.ph-info{flex:1}
+.ph-title{font-size:13px;font-weight:500;margin-bottom:2px}
+.ph-sub{font-size:11px;color:var(--text3)}
+.ph-arrow{color:var(--text3);font-size:16px}
 
 /* PHASE DETAIL */
-.phase-detail-header { margin-bottom: 1.25rem; }
-.phase-detail-title { font-size: 16px; font-weight: 500; margin-bottom: 0.25rem; }
-.phase-detail-desc { font-size: 12px; color: var(--text2); }
+.pd-header{margin-bottom:1.25rem}
+.pd-title{font-size:17px;font-weight:500;margin-bottom:.2rem}
+.pd-desc{font-size:12px;color:var(--text2);line-height:1.6}
 
-.locked-notice {
-  background: var(--surface2); border: 0.5px solid var(--border);
-  border-radius: 10px; padding: 1.25rem; text-align: center;
-  font-size: 13px; color: var(--text3); line-height: 1.6;
-}
-.locked-notice strong { color: var(--text2); display: block; margin-bottom: 4px; font-weight: 500; }
+.insight-box{background:var(--amber-dim);border:0.5px solid rgba(245,158,11,.2);border-radius:var(--radius);padding:.85rem 1rem;margin-bottom:1rem}
+.insight-label{font-family:var(--mono);font-size:9px;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem}
+.insight-text{font-size:12px;color:var(--text2);line-height:1.6}
 
-.gate-section { margin-bottom: 1.25rem; }
-.gate-section-label { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
+.prog-summary{display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;background:var(--surface);border:0.5px solid var(--border);border-radius:8px;margin-bottom:1rem}
+.prog-label{font-family:var(--mono);font-size:11px;color:var(--text3)}
+.prog-count{font-family:var(--mono);font-size:13px;color:var(--text2)}
+.prog-count em{color:var(--green);font-style:normal}
 
-.gate-item {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 10px 0; border-bottom: 0.5px solid var(--border);
-}
-.gate-item:last-child { border-bottom: none; }
+.gate-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.gate-item:last-child{border-bottom:none}
+.gate-chk{width:20px;height:20px;border-radius:5px;flex-shrink:0;border:0.5px solid var(--border2);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .15s}
+.gate-chk.chk{background:var(--green);border-color:var(--green)}
+.gate-chk.chk::after{content:'';display:block;width:5px;height:9px;border:1.5px solid #000;border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px)}
+.gate-text{font-size:13px;color:var(--text);line-height:1.5;flex:1}
+.gate-text.done{color:var(--text3);text-decoration:line-through}
 
-.gate-check {
-  width: 20px; height: 20px; border-radius: 5px; flex-shrink: 0;
-  border: 0.5px solid var(--border2); background: var(--surface2);
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  margin-top: 1px; transition: background 0.15s, border-color 0.15s;
-}
-.gate-check.checked { background: var(--green); border-color: var(--green); }
-.gate-check.checked::after {
-  content: ''; display: block; width: 5px; height: 9px;
-  border: 1.5px solid #000; border-top: none; border-left: none;
-  transform: rotate(45deg) translate(-1px, -1px);
-}
-.gate-text { font-size: 13px; color: var(--text); line-height: 1.5; flex: 1; }
-.gate-text.is-done { color: var(--text3); text-decoration: line-through; }
+/* DOCS */
+.doc-section{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:.75rem}
+.doc-title{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:.6rem;font-family:var(--mono);letter-spacing:.05em}
+.doc-textarea{width:100%;background:var(--surface2);border:0.5px solid var(--border2);border-radius:7px;padding:.75rem;color:var(--text);font-size:13px;line-height:1.6;resize:vertical;min-height:80px;outline:none;transition:border-color .15s}
+.doc-textarea:focus{border-color:var(--green-border)}
+.doc-textarea::placeholder{color:var(--text3)}
+.doc-saved{font-family:var(--mono);font-size:10px;color:var(--green);margin-top:.4rem;opacity:0;transition:opacity .3s}
+.doc-saved.show{opacity:1}
 
-.progress-summary {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 1rem; padding: 0.75rem 1rem;
-  background: var(--surface); border: 0.5px solid var(--border); border-radius: 8px;
-}
-.progress-label { font-family: var(--mono); font-size: 11px; color: var(--text3); }
-.progress-count { font-family: var(--mono); font-size: 13px; color: var(--text2); }
-.progress-count span { color: var(--green); }
+/* BUTTONS */
+.btn{width:100%;padding:13px;border-radius:var(--radius);font-size:14px;font-weight:500;cursor:pointer;transition:opacity .15s,transform .1s;margin-bottom:8px;border:none}
+.btn:active{transform:scale(.98)}
+.btn-green{background:var(--green);color:#000}
+.btn-green:disabled{opacity:.3;cursor:default;transform:none}
+.btn-outline{background:transparent;border:0.5px solid var(--border2);color:var(--text2)}
+.btn-outline:hover{border-color:var(--border3);color:var(--text)}
+.btn-danger{background:var(--red-dim);border:0.5px solid rgba(239,68,68,.2);color:var(--red)}
 
-.action-btn {
-  width: 100%; padding: 13px; border-radius: 10px; border: none;
-  font-family: var(--sans); font-size: 14px; font-weight: 500; cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
-  margin-bottom: 8px;
-}
-.action-btn:active { transform: scale(0.98); }
-.btn-primary { background: var(--green); color: #000; }
-.btn-primary:disabled { opacity: 0.3; cursor: default; }
-.btn-secondary {
-  background: transparent; color: var(--text2);
-  border: 0.5px solid var(--border2) !important; border: none;
-}
-.btn-secondary:hover { border-color: var(--border2); color: var(--text); }
+/* BACK */
+.back-row{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;cursor:pointer;color:var(--text3);font-size:13px;transition:color .15s;background:none;border:none;padding:0}
+.back-row:hover{color:var(--text2)}
 
-/* NEW PROJECT FORM */
-.form-title { font-size: 18px; font-weight: 500; margin-bottom: 0.25rem; }
-.form-sub { font-size: 13px; color: var(--text2); margin-bottom: 1.75rem; }
+/* FORM */
+.form-group{margin-bottom:1.1rem}
+.form-label{font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.45rem;display:block}
+.form-input{width:100%;padding:11px 13px;border-radius:8px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);font-size:14px;outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--green-border)}
+.form-input::placeholder{color:var(--text3)}
+.form-textarea{resize:vertical;min-height:90px;line-height:1.6}
+.form-hint{font-size:11px;color:var(--text3);margin-top:.35rem;line-height:1.5}
 
-.form-group { margin-bottom: 1.25rem; }
-.form-label { font-family: var(--mono); font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; display: block; }
-.form-input {
-  width: 100%; padding: 11px 14px; border-radius: 8px;
-  border: 0.5px solid var(--border2); background: var(--surface2);
-  color: var(--text); font-family: var(--sans); font-size: 14px;
-  outline: none; transition: border-color 0.15s;
-}
-.form-input:focus { border-color: var(--green); }
-.form-textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+/* LOGIN */
+.login-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:1.5rem;padding:2rem}
+.login-logo{font-family:var(--mono);font-size:28px;color:var(--text);letter-spacing:.05em}
+.login-logo em{color:var(--green);font-style:normal}
+.login-card{width:100%;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:1.5rem}
+.login-title{font-size:15px;font-weight:500;margin-bottom:.25rem}
+.login-sub{font-size:12px;color:var(--text2);margin-bottom:1.25rem}
+.login-error{font-size:12px;color:var(--red);margin-top:.5rem;display:none}
 
-.form-hint { font-size: 11px; color: var(--text3); margin-top: 0.4rem; line-height: 1.5; }
+/* LOCKED */
+.locked-box{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:1.5rem;text-align:center}
+.locked-icon{font-size:28px;margin-bottom:.75rem}
+.locked-title{font-size:14px;font-weight:500;margin-bottom:.4rem}
+.locked-sub{font-size:12px;color:var(--text2);line-height:1.6}
 
-/* TOAST */
-.toast {
-  position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px);
-  background: var(--surface); border: 0.5px solid var(--green-border);
-  color: var(--text); padding: 10px 20px; border-radius: 100px;
-  font-size: 13px; font-family: var(--mono); white-space: nowrap;
-  transition: transform 0.3s ease; z-index: 100;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
-}
-.toast.show { transform: translateX(-50%) translateY(0); }
+/* LEARN CARDS */
+.learn-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);margin-bottom:.75rem;overflow:hidden}
+.learn-header{padding:1rem 1.1rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.learn-phase-tag{font-family:var(--mono);font-size:10px;padding:2px 9px;border-radius:20px;background:var(--surface2);border:0.5px solid var(--border2);color:var(--text2)}
+.learn-title{font-size:14px;font-weight:500;margin:.25rem 0 .1rem}
+.learn-desc{font-size:12px;color:var(--text2)}
+.learn-toggle{color:var(--text3);font-size:18px;transition:transform .2s}
+.learn-toggle.open{transform:rotate(180deg)}
+.learn-body{display:none;padding:0 1.1rem 1rem;border-top:0.5px solid var(--border)}
+.learn-body.open{display:block}
+.learn-why{margin-top:.85rem;margin-bottom:.85rem}
+.learn-why-label{font-family:var(--mono);font-size:9px;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem}
+.learn-why-text{font-size:13px;color:var(--text2);line-height:1.6}
+.learn-gates{margin-top:.5rem}
+.learn-gate{display:flex;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border);align-items:flex-start}
+.learn-gate:last-child{border-bottom:none}
+.learn-gate-num{font-family:var(--mono);font-size:11px;color:var(--text3);flex-shrink:0;margin-top:2px}
+.learn-gate-text{font-size:12px;color:var(--text);line-height:1.5}
+.learn-gate-why{font-size:11px;color:var(--text2);margin-top:2px;line-height:1.4;font-style:italic}
+
+/* SIMULATOR */
+.sim-box{background:var(--blue-dim);border:0.5px solid rgba(59,130,246,.2);border-radius:var(--radius);padding:1rem 1.1rem;margin-bottom:.75rem}
+.sim-label{font-family:var(--mono);font-size:9px;color:var(--blue);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem}
+.sim-title{font-size:14px;font-weight:500;margin-bottom:.25rem}
+.sim-sub{font-size:12px;color:var(--text2);margin-bottom:.85rem;line-height:1.5}
 
 /* DECISION LOG */
-.log-item {
-  padding: 0.75rem 0; border-bottom: 0.5px solid var(--border);
-}
-.log-item:last-child { border-bottom: none; }
-.log-date { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-bottom: 4px; }
-.log-decision { font-size: 13px; color: var(--text); line-height: 1.5; }
-.log-reason { font-size: 12px; color: var(--text3); margin-top: 3px; }
+.dec-item{padding:.85rem 0;border-bottom:0.5px solid var(--border)}
+.dec-item:last-child{border-bottom:none}
+.dec-meta{font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:.3rem}
+.dec-decision{font-size:13px;color:var(--text);line-height:1.5;margin-bottom:.25rem}
+.dec-reason{font-size:12px;color:var(--text2);line-height:1.4}
 
-.empty-state { text-align: center; padding: 3rem 1rem; color: var(--text3); font-size: 13px; }
+/* NEW DECISION */
+.add-dec-form{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:.75rem}
 
-/* BOTTOM NAV */
-.bottom-nav {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  background: var(--surface); border-top: 0.5px solid var(--border);
-  display: flex; padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
-  max-width: 430px; margin: 0 auto;
-}
-.nav-item {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
-  gap: 3px; cursor: pointer; padding: 6px 0;
-  color: var(--text3); font-size: 10px; font-family: var(--mono);
-  transition: color 0.15s;
-}
-.nav-item.active { color: var(--green); }
-.nav-icon { font-size: 18px; line-height: 1; }
+/* TOAST */
+.toast{position:fixed;bottom:5rem;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface);border:0.5px solid var(--green-border);color:var(--text);padding:9px 18px;border-radius:100px;font-family:var(--mono);font-size:12px;white-space:nowrap;opacity:0;transition:opacity .25s,transform .25s;z-index:200;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-.content-pad { padding-bottom: 80px; }
+/* EMPTY */
+.empty{text-align:center;padding:3rem 1rem;color:var(--text3);font-size:13px;line-height:1.6}
+
+/* STATUS ROW */
+.status-row{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.stat-chip{font-family:var(--mono);font-size:11px;padding:4px 12px;border-radius:20px;border:0.5px solid var(--border2);color:var(--text2)}
+
+/* DIVIDER */
+.divider{height:0.5px;background:var(--border);margin:1rem 0}
+
+/* NEW PROJECT BTN */
+.new-proj-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:var(--radius);border:0.5px dashed var(--border2);background:transparent;color:var(--text3);font-size:13px;cursor:pointer;transition:border-color .15s,color .15s}
+.new-proj-btn:hover{border-color:var(--green-border);color:var(--green)}
+
+/* LOADING */
+.loading{text-align:center;padding:2rem;color:var(--text3);font-family:var(--mono);font-size:12px}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="top-bar">
-    <div class="logo">SDD<span>.</span>HUB</div>
-    <div class="version">v1.0</div>
-  </div>
-
-  <!-- HOME VIEW -->
-  <div class="view active content-pad" id="view-home">
-    <div class="home-title">Gestão de<br><strong>projetos SDD</strong></div>
-    <div class="home-sub">Spec-Driven Development — nenhuma fase avança sem gate aprovado.</div>
-
-    <div class="section-label">Projetos ativos</div>
-    <div class="project-list" id="project-list"></div>
-    <button class="new-project-btn" onclick="showView('view-new')">
-      <span>+</span> Novo projeto
-    </button>
-  </div>
-
-  <!-- PROJECT VIEW -->
-  <div class="view content-pad" id="view-project">
-    <div class="back-row" onclick="showView('view-home')">
-      <span class="back-icon">←</span> Todos os projetos
+    <div class="logo">SDD<em>.</em>HUB</div>
+    <div class="top-actions">
+      <div class="mode-badge public" id="mode-badge" onclick="handleModeToggle()">modo público</div>
     </div>
-    <div class="project-view-title" id="pv-title"></div>
-    <div class="project-view-sub" id="pv-sub"></div>
-    <div class="section-label">Fases do projeto</div>
-    <div class="phase-list" id="pv-phases"></div>
   </div>
 
-  <!-- PHASE DETAIL VIEW -->
-  <div class="view content-pad" id="view-phase">
-    <div class="back-row" id="phase-back-btn">
-      <span class="back-icon">←</span> <span id="phase-back-label">Voltar</span>
+  <!-- ======= LEARN VIEW (público) ======= -->
+  <div class="view active" id="view-learn">
+    <div class="view-title">O que é<br><strong>SDD?</strong></div>
+    <div class="view-sub">Spec-Driven Development é uma metodologia que elimina o caos do vibe coding. Cada fase produz um contrato que a próxima deve respeitar — sem pular etapas, sem alucinações, sem resultados imprevisíveis.</div>
+
+    <div class="insight-box">
+      <div class="insight-label">Por que isso importa</div>
+      <div class="insight-text">O vibe coding cria um loop caótico: prompt → código → não funcionou → edita prompt → código diferente → ainda não funciona. Isso é aceitável para protótipos descartáveis. Para sistemas reais com dados reais e usuários dependentes, é inaceitável.</div>
     </div>
-    <div class="phase-detail-header">
-      <div class="phase-detail-title" id="pd-title"></div>
-      <div class="phase-detail-desc" id="pd-desc"></div>
+
+    <div class="label">As 6 fases do SDD</div>
+    <div id="learn-phases"></div>
+
+    <div class="divider"></div>
+    <div class="label">Simule um projeto</div>
+    <div class="sim-box">
+      <div class="sim-label">simulador interativo</div>
+      <div class="sim-title">Projeto fictício: Portal do Instrutor</div>
+      <div class="sim-sub">Experimente o fluxo SDD completo sem criar conta. Nada é salvo — é apenas para aprender a metodologia.</div>
+      <button class="btn btn-outline" style="margin:0" onclick="startSimulator()">Iniciar simulação →</button>
+    </div>
+
+    <div class="divider"></div>
+    <div style="text-align:center;padding:.5rem 0 .25rem">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:.75rem">Pronto para usar de verdade?</div>
+      <button class="btn btn-green" style="margin:0" onclick="handleModeToggle()">Acessar meu painel privado</button>
+    </div>
+  </div>
+
+  <!-- ======= SIMULATOR VIEW ======= -->
+  <div class="view" id="view-sim">
+    <button class="back-row" onclick="showView('view-learn');clearSimState()">← Voltar ao guia</button>
+    <div style="background:var(--blue-dim);border:0.5px solid rgba(59,130,246,.2);border-radius:8px;padding:.6rem 1rem;margin-bottom:1.25rem;font-family:var(--mono);font-size:11px;color:var(--blue)">modo simulação — nada é salvo</div>
+    <div class="pd-title" id="sim-title"></div>
+    <div class="pd-desc" style="margin-bottom:1rem" id="sim-desc"></div>
+    <div id="sim-content"></div>
+  </div>
+
+  <!-- ======= LOGIN VIEW ======= -->
+  <div class="view" id="view-login">
+    <div class="login-wrap">
+      <div class="login-logo">SDD<em>.</em>HUB</div>
+      <div class="login-card">
+        <div class="login-title">Acesso privado</div>
+        <div class="login-sub">Apenas Jefferson tem acesso a esta área.</div>
+        <div class="form-group" style="margin-bottom:.75rem">
+          <label class="form-label">Senha mestra</label>
+          <input class="form-input" type="password" id="login-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <div class="login-error" id="login-err">Senha incorreta.</div>
+        <button class="btn btn-green" style="margin:0;margin-top:.75rem" onclick="doLogin()">Entrar</button>
+        <button class="btn btn-outline" style="margin-top:8px" onclick="showView('view-learn');setPublicMode()">Voltar ao modo público</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= PRIVATE HOME ======= -->
+  <div class="view" id="view-private-home">
+    <div class="view-title">Meus<br><strong>Projetos</strong></div>
+    <div class="view-sub" style="margin-bottom:1rem">Painel privado — só você tem acesso a esta área.</div>
+    <div class="label" style="margin-top:0">Projetos ativos</div>
+    <div id="private-proj-list"><div class="loading">carregando...</div></div>
+    <button class="new-proj-btn" onclick="showView('view-new-proj')">+ Novo projeto</button>
+  </div>
+
+  <!-- ======= PROJECT DETAIL ======= -->
+  <div class="view" id="view-project">
+    <button class="back-row" onclick="showView('view-private-home');loadPrivateProjects()">← Todos os projetos</button>
+    <div class="pd-title" id="proj-title"></div>
+    <div class="pd-desc" id="proj-problem" style="margin-bottom:1rem"></div>
+    <div class="status-row" id="proj-status-row"></div>
+    <div class="label" style="margin-top:.25rem">Fases</div>
+    <div id="proj-phases"></div>
+  </div>
+
+  <!-- ======= PHASE DETAIL ======= -->
+  <div class="view" id="view-phase">
+    <button class="back-row" id="phase-back" onclick="backToProject()">← Voltar</button>
+    <div class="pd-header">
+      <div class="pd-title" id="pd-title"></div>
+      <div class="pd-desc" id="pd-desc"></div>
     </div>
     <div id="pd-content"></div>
   </div>
 
-  <!-- NEW PROJECT VIEW -->
-  <div class="view content-pad" id="view-new">
-    <div class="back-row" onclick="showView('view-home')">
-      <span class="back-icon">←</span> Cancelar
-    </div>
-    <div class="form-title">Novo projeto</div>
-    <div class="form-sub">Preencha o briefing para iniciar a Fase 0.</div>
+  <!-- ======= NEW PROJECT ======= -->
+  <div class="view" id="view-new-proj">
+    <button class="back-row" onclick="showView('view-private-home')">← Cancelar</button>
+    <div class="view-title" style="margin-top:0">Novo<br><strong>Projeto</strong></div>
+    <div class="view-sub">Preencha o briefing. Sem problem statement claro, o projeto trava no PRD.</div>
     <div class="form-group">
       <label class="form-label">Nome do projeto</label>
-      <input class="form-input" id="np-name" type="text" placeholder="Ex: Portal de Instrutores">
+      <input class="form-input" id="np-name" type="text" placeholder="Ex: Portal de Instrutores CRJ">
     </div>
     <div class="form-group">
-      <label class="form-label">Qual dor este projeto resolve?</label>
-      <textarea class="form-input form-textarea" id="np-problem" placeholder="Descreva o problema central..."></textarea>
-      <div class="form-hint">Seja específico. Projetos com problem statement vago travam no PRD.</div>
+      <label class="form-label">Qual dor exata este projeto resolve?</label>
+      <textarea class="form-input form-textarea" id="np-problem" placeholder="Seja específico. Qual processo está quebrado? Quem sofre com isso? Qual o impacto atual?"></textarea>
+      <div class="form-hint">Projetos com problem statement vago invariavelmente travam na Fase 2 (PRD) porque o escopo não fecha.</div>
     </div>
     <div class="form-group">
-      <label class="form-label">Objetivo central (mensurável)</label>
+      <label class="form-label">Objetivo central mensurável</label>
       <input class="form-input" id="np-goal" type="text" placeholder="Ex: Reduzir tempo de relatório de 2h para 15min">
+      <div class="form-hint">Deve ter um número ou critério verificável. "Melhorar a gestão" não é mensurável.</div>
     </div>
     <div class="form-group">
-      <label class="form-label">Responsável</label>
-      <input class="form-input" id="np-owner" type="text" placeholder="Jefferson" value="Jefferson">
+      <label class="form-label">Restrições conhecidas</label>
+      <textarea class="form-input form-textarea" id="np-constraints" placeholder="O que não pode mudar? Ex: estrutura atual do Sheets deve ser preservada, sem budget para servidor..." style="min-height:70px"></textarea>
     </div>
-    <button class="action-btn btn-primary" onclick="createProject()">Criar projeto e iniciar Fase 0</button>
+    <button class="btn btn-green" onclick="createProject()">Criar projeto e iniciar Fase 0</button>
   </div>
 
-  <!-- DECISION LOG VIEW -->
-  <div class="view content-pad" id="view-log">
-    <div class="home-title" style="margin-top:1rem">Decision<br><strong>Log</strong></div>
-    <div class="home-sub">Registro de todas as decisões técnicas por projeto.</div>
-    <div id="log-content"></div>
+  <!-- ======= DECISIONS VIEW ======= -->
+  <div class="view" id="view-decisions">
+    <div class="view-title">Decision<br><strong>Log</strong></div>
+    <div class="view-sub">Registro de todas as decisões técnicas e de negócio. Cada decisão que não está aqui é uma dívida técnica futura.</div>
+    <div id="dec-content"><div class="loading">carregando...</div></div>
   </div>
 
   <!-- BOTTOM NAV -->
-  <div class="bottom-nav">
-    <div class="nav-item active" id="nav-home" onclick="navTo('home')">
-      <div class="nav-icon">⊞</div>
-      <div>projetos</div>
-    </div>
-    <div class="nav-item" id="nav-log" onclick="navTo('log')">
-      <div class="nav-icon">◎</div>
-      <div>decisões</div>
-    </div>
-  </div>
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="nav-item active" id="nav-learn" onclick="navTo('learn')">
+      <div class="nav-icon">◎</div><div>guia</div>
+    </button>
+    <button class="nav-item" id="nav-projects" onclick="navTo('projects')">
+      <div class="nav-icon">⊞</div><div>projetos</div>
+    </button>
+    <button class="nav-item" id="nav-decisions" onclick="navTo('decisions')">
+      <div class="nav-icon">◈</div><div>decisões</div>
+    </button>
+  </nav>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-const PHASE_TEMPLATES = [
+// ============================================================
+// CONFIG — ALTERE AQUI
+// ============================================================
+const SUPABASE_URL = 'https://ednawgxsbwlnemlqyniv.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkbmF3Z3hzYndsbmVtbHF5bml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MDEyNTcsImV4cCI6MjA5MTE3NzI1N30.wUcqBz5gx0-Ge99WzfCZVu-C4YOGT5BTGr-YdeIKVv8';
+const MASTER_HASH = 'REPLACE_WITH_HASH'; // será gerado abaixo
+// ============================================================
+
+// ============================================================
+// PHASE DATA
+// ============================================================
+const PHASES = [
   {
-    id: 0, label: 'Fase 0', title: 'Briefing',
-    desc: 'Problem statement e objetivo aprovados',
-    gates: [
-      'Problem statement descreve a dor real e específica',
-      'Objetivo é mensurável (tem número ou critério claro)',
-      'Jefferson aprovou o briefing'
+    id:0, label:'Fase 0', title:'Briefing',
+    desc:'Problem statement claro e objetivo mensurável aprovados.',
+    why:'Sem um problem statement preciso, o projeto resolve o problema errado. Isso é mais comum do que parece — equipes gastam meses construindo a solução perfeita para a pergunta errada.',
+    gates:[
+      {text:'Problem statement descreve a dor real e específica (não genérica)', why:'Generalidades como "melhorar a gestão" são inúteis como especificação.'},
+      {text:'Existe pelo menos um usuário real identificado que sofre com o problema', why:'Projetos sem usuário real identificado tendem a resolver problemas imaginários.'},
+      {text:'Objetivo é mensurável — tem número ou critério verificável', why:'Sem critério de sucesso, nunca se sabe quando o projeto está pronto.'},
+      {text:'Restrições conhecidas estão documentadas', why:'Restrições descobertas durante a implementação são as mais caras.'},
+      {text:'Aprovado pelo responsável do projeto', why:'Gate formal. Sem aprovação, não existe compromisso.'}
+    ],
+    doc_fields:[
+      {key:'problem', label:'Problem Statement', placeholder:'Descreva a dor exata que este projeto resolve...'},
+      {key:'users', label:'Usuários afetados', placeholder:'Quem sofre com este problema hoje?'},
+      {key:'goal', label:'Objetivo mensurável', placeholder:'Qual é o critério de sucesso?'},
+      {key:'constraints', label:'Restrições', placeholder:'O que não pode mudar ou não está disponível?'}
     ]
   },
   {
-    id: 1, label: 'Fase 1', title: 'Requisitos',
-    desc: 'RF, RNF, restrições e regras de negócio',
-    gates: [
-      'Requisitos Funcionais cobrem todas as funcionalidades críticas',
-      'Requisitos Não-Funcionais têm critérios mensuráveis',
-      'Restrições documentadas (o que não pode mudar)',
-      'Regras de negócio específicas do domínio documentadas',
-      'Campos protegidos e auditáveis definidos',
-      'Jefferson aprovou os requisitos'
+    id:1, label:'Fase 1', title:'Requisitos',
+    desc:'Requisitos funcionais, não-funcionais, restrições e regras de negócio.',
+    why:'Requisitos são contratos. Um requisito mal escrito é um bug que ainda não aconteceu. A diferença entre RF (o que o sistema faz) e RNF (como ele se comporta) é fundamental — confundir os dois é uma das causas mais comuns de retrabalho.',
+    gates:[
+      {text:'Requisitos Funcionais (RF) cobrem todas as funcionalidades críticas', why:'RF descrevem comportamento: "o sistema deve calcular X e exibir Y".'},
+      {text:'Requisitos Não-Funcionais (RNF) têm critérios mensuráveis', why:'RNF sem número são decoração: "rápido" não especifica nada. "< 2s em 95% das requisições" especifica.'},
+      {text:'Restrições documentadas — o que NÃO pode mudar', why:'Restrições são tão importantes quanto requisitos. Ignorá-las gera retrabalho garantido.'},
+      {text:'Regras de negócio do domínio estão documentadas', why:'Regras de negócio são o conhecimento que vive na cabeça das pessoas. Se não estiver documentado, vai ser perdido.'},
+      {text:'Campos protegidos e auditáveis definidos (para sistemas com dados)', why:'Definir antes de implementar evita problemas de integridade de dados depois.'},
+      {text:'Aprovado pelo responsável do projeto', why:'Gate formal.'}
+    ],
+    doc_fields:[
+      {key:'rf', label:'Requisitos Funcionais', placeholder:'RF-01: O sistema deve...\nRF-02: O sistema deve...'},
+      {key:'rnf', label:'Requisitos Não-Funcionais', placeholder:'RNF-01: Tempo de resposta < Xs\nRNF-02: ...'},
+      {key:'rules', label:'Regras de negócio', placeholder:'RN-01: Quando X acontecer, o sistema deve Y...'},
+      {key:'protected', label:'Campos protegidos / auditáveis', placeholder:'Campos que nunca podem ser sobrescritos com valor vazio...'}
     ]
   },
   {
-    id: 2, label: 'Fase 2', title: 'PRD',
-    desc: 'Escopo fechado, casos de uso e critérios de aceite',
-    gates: [
-      'Escopo definido sem ambiguidade (dentro e fora)',
-      'Casos de uso cobrem todos os usuários reais',
-      'Critérios de aceitação são testáveis por funcionalidade',
-      'Jefferson aprovou o PRD'
+    id:2, label:'Fase 2', title:'PRD',
+    desc:'Product Requirements Document — escopo fechado, casos de uso e critérios de aceite.',
+    why:'O PRD é onde o escopo fecha. "Dentro do escopo" e "fora do escopo" precisam ser explícitos. Cada funcionalidade sem critério de aceitação é uma disputa de interpretação esperando para acontecer.',
+    gates:[
+      {text:'Escopo definido sem ambiguidade — o que está dentro e o que está fora', why:'Escopo aberto é o maior risco de um projeto. Cada "só mais uma coisinha" custa tempo real.'},
+      {text:'Casos de uso cobrem todos os usuários reais identificados na Fase 0', why:'Um caso de uso que não existe no PRD não será testado e vai falhar em produção.'},
+      {text:'Cada funcionalidade tem critério de aceitação testável', why:'Critério de aceitação é a definição de "pronto". Sem ele, pronto nunca chega.'},
+      {text:'Priorização definida: O que é crítico vs. O que é desejável', why:'Em projetos reais, nem tudo cabe no prazo. Priorização explícita evita discussão na hora errada.'},
+      {text:'Aprovado pelo responsável do projeto', why:'Gate formal.'}
+    ],
+    doc_fields:[
+      {key:'in_scope', label:'Dentro do escopo', placeholder:'Funcionalidades confirmadas neste projeto...'},
+      {key:'out_scope', label:'Fora do escopo', placeholder:'O que explicitamente NÃO faz parte deste projeto...'},
+      {key:'use_cases', label:'Casos de uso', placeholder:'UC-01: [Ator] — Fluxo: ... — Critério de aceite: ...'},
+      {key:'priority', label:'Priorização', placeholder:'Crítico: ...\nImportante: ...\nDesejável: ...'}
     ]
   },
   {
-    id: 3, label: 'Fase 3', title: 'Design técnico',
-    desc: 'Arquitetura, contratos e plano de rollback',
-    gates: [
-      'Arquitetura reflete o estado real do sistema',
-      'Decisões técnicas documentadas com justificativa',
-      'Contratos de interface definidos (entradas e saídas)',
-      'Plano de rollback definido para cada componente crítico',
-      'Jefferson aprovou o design'
+    id:3, label:'Fase 3', title:'Design Técnico',
+    desc:'Arquitetura, decisões técnicas, contratos de interface e plano de rollback.',
+    why:'Design técnico é onde as decisões mais caras são tomadas. Mudar a arquitetura depois que o código existe custa 10x mais do que mudá-la no papel. O plano de rollback é o seguro — você espera nunca usar, mas é irresponsável não ter.',
+    gates:[
+      {text:'Arquitetura documentada — quais componentes existem e como se conectam', why:'Um diagrama vale mais que mil linhas de código sem contexto.'},
+      {text:'Decisões técnicas documentadas com justificativa e alternativa descartada', why:'Sem registro do motivo da decisão, a próxima pessoa (ou você em 6 meses) vai desfazê-la sem saber por quê foi tomada.'},
+      {text:'Contratos de interface definidos — o que entra e o que sai de cada componente', why:'Contratos permitem que partes do sistema sejam desenvolvidas em paralelo e testadas isoladamente.'},
+      {text:'Plano de rollback definido para cada componente crítico', why:'Rollback sem plano é restaurar backup. Rollback com plano é voltar ao estado seguro em minutos.'},
+      {text:'Impacto no sistema legado avaliado', why:'Sistemas legados têm dependências invisíveis. Ignorá-las é o caminho mais rápido para uma sexta-feira às 23h.'},
+      {text:'Aprovado pelo responsável do projeto', why:'Gate formal.'}
+    ],
+    doc_fields:[
+      {key:'arch', label:'Arquitetura', placeholder:'Descreva os componentes e como se conectam. Use ASCII se necessário.'},
+      {key:'decisions', label:'Decisões técnicas', placeholder:'DEC-01: [Decisão] — Motivo: ... — Alternativa descartada: ...'},
+      {key:'contracts', label:'Contratos de interface', placeholder:'API X recebe: ... / retorna: ...\nAba Y espera colunas: ...'},
+      {key:'rollback', label:'Plano de rollback', placeholder:'Em caso de falha em X: 1. ... 2. ... 3. ...'}
     ]
   },
   {
-    id: 4, label: 'Fase 4', title: 'Implementação',
-    desc: 'Backlog priorizado e critérios de aceite validados',
-    gates: [
-      'Todos os itens críticos do backlog entregues',
-      'Critérios de aceitação testados e aprovados',
-      'Nenhuma regressão nas funcionalidades existentes',
-      'Documentação técnica atualizada',
-      'Jefferson aprovou a entrega'
+    id:4, label:'Fase 4', title:'Implementação',
+    desc:'Código gerado com base no design aprovado, com testes rastreados aos critérios de aceite.',
+    why:'Na implementação SDD, o código é a última etapa — não a primeira. Cada linha deve ser rastreável a um RF, RNF ou caso de uso do PRD. Qualquer código que não rastreia a um requisito é escopo não aprovado.',
+    gates:[
+      {text:'Todos os itens críticos do backlog entregues', why:'Itens críticos bloqueiam o valor principal do projeto. Não existe "quase pronto" para itens críticos.'},
+      {text:'Cada entrega rastreia de volta a um RF ou caso de uso', why:'Rastreabilidade é o que diferencia implementação SDD de vibe coding.'},
+      {text:'Critérios de aceitação do PRD testados e aprovados', why:'O teste valida contra o contrato — não contra a opinião de quem implementou.'},
+      {text:'Nenhuma regressão nas funcionalidades existentes', why:'Novo código não pode quebrar o que já funcionava. Sempre.'},
+      {text:'Documentação técnica atualizada', why:'Documentação desatualizada é pior que sem documentação — engana quem vai manter.'},
+      {text:'Aprovado pelo responsável do projeto', why:'Gate formal.'}
+    ],
+    doc_fields:[
+      {key:'backlog', label:'Backlog de implementação', placeholder:'IMP-01: [Tarefa] — RF relacionado: ... — Status: ...\nIMP-02: ...'},
+      {key:'tests', label:'Resultados dos testes', placeholder:'UC-01: Passou / Falhou — Observação: ...\nRNF-01: Passou / Falhou — ...'},
+      {key:'regressions', label:'Verificação de regressão', placeholder:'Funcionalidades testadas para regressão e resultado...'},
+      {key:'notes', label:'Notas técnicas', placeholder:'Decisões tomadas durante implementação que desviam do design...'}
     ]
   },
   {
-    id: 5, label: 'Fase 5', title: 'Revisão pós-deploy',
-    desc: 'Lições aprendidas e legado atualizado',
-    gates: [
-      'O que funcionou conforme a spec está documentado',
-      'Desvios registrados como novos requisitos ou decisões',
-      'Documentação de legado atualizada',
-      'Skill/base de conhecimento sincronizada'
+    id:5, label:'Fase 5', title:'Revisão Pós-Deploy',
+    desc:'Lições aprendidas, desvios documentados e base de conhecimento atualizada.',
+    why:'A revisão pós-deploy fecha o ciclo de aprendizado. Projetos sem revisão cometem os mesmos erros indefinidamente. Desvios não documentados viram dívida técnica invisível.',
+    gates:[
+      {text:'O que funcionou conforme a spec está documentado', why:'Saber o que funcionou é tão importante quanto saber o que falhou.'},
+      {text:'Desvios da spec documentados como novos requisitos ou decisões', why:'Desvios não documentados são ticking time bombs — alguém vai "corrigir" para o estado original.'},
+      {text:'Documentação de legado atualizada', why:'O sistema real é o que está em produção, não o que estava no PRD.'},
+      {text:'Lições aprendidas registradas no Decision Log', why:'O Decision Log é a memória institucional do projeto.'},
+      {text:'Base de conhecimento sincronizada com o estado atual', why:'Skills, wikis e docs precisam refletir o que existe hoje.'}
+    ],
+    doc_fields:[
+      {key:'worked', label:'O que funcionou conforme a spec', placeholder:'Funcionalidades que foram entregues exatamente como especificado...'},
+      {key:'deviated', label:'Desvios documentados', placeholder:'O que mudou em relação ao PRD e por quê...'},
+      {key:'lessons', label:'Lições aprendidas', placeholder:'O que faria diferente? O que deve ser replicado?'},
+      {key:'next', label:'Próximos passos / débitos', placeholder:'O que ficou de fora do escopo e pode virar próximo projeto...'}
     ]
   }
 ];
 
-let state = loadState();
-let currentProject = null;
-let currentPhase = null;
+// ============================================================
+// STATE
+// ============================================================
+let isPrivate = false;
+let currentProjectId = null;
+let currentPhaseIdx = null;
+let simPhase = 0;
+let simGates = [];
 
-function loadState() {
+// ============================================================
+// SUPABASE HELPERS
+// ============================================================
+async function sbFetch(path, opts={}) {
+  const res = await fetch(SUPABASE_URL + '/rest/v1' + path, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': opts.prefer || 'return=representation',
+      ...(opts.headers||{})
+    },
+    method: opts.method || 'GET',
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function getProjects() {
+  return await sbFetch('/projects?select=*&order=created_at.desc');
+}
+
+async function getProject(id) {
+  const rows = await sbFetch('/projects?id=eq.' + id + '&select=*');
+  return rows?.[0];
+}
+
+async function createProjectDB(data) {
+  const rows = await sbFetch('/projects', {method:'POST', body: data, prefer:'return=representation'});
+  return rows?.[0];
+}
+
+async function updateProject(id, data) {
+  await sbFetch('/projects?id=eq.' + id, {method:'PATCH', body: data, prefer:'return=minimal'});
+}
+
+async function getDecisions() {
+  return await sbFetch('/decisions?select=*&order=created_at.desc');
+}
+
+async function createDecision(data) {
+  await sbFetch('/decisions', {method:'POST', body: data, prefer:'return=minimal'});
+}
+
+// ============================================================
+// AUTH (hash simples no browser)
+// ============================================================
+async function hashPassword(pw) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// Gerar hash da senha mestra no console do browser:
+// (async()=>{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('SUA_SENHA'));console.log(Array.from(new Uint8Array(b)).map(b=>b.toString(16).padStart(2,'0')).join(''))})()
+
+async function doLogin() {
+  const pw = document.getElementById('login-pw').value;
+  const err = document.getElementById('login-err');
+  if (!pw) return;
+
+  // Se REPLACE_WITH_HASH ainda não foi substituído, usa modo dev
+  if (MASTER_HASH === 'REPLACE_WITH_HASH') {
+    if (pw === 'jefferson2026') {
+      setPrivateMode();
+      return;
+    }
+  } else {
+    const h = await hashPassword(pw);
+    if (h === MASTER_HASH) {
+      setPrivateMode();
+      return;
+    }
+  }
+  err.style.display = 'block';
+  document.getElementById('login-pw').value = '';
+}
+
+function setPrivateMode() {
+  isPrivate = true;
+  sessionStorage.setItem('sdd-auth', '1');
+  document.getElementById('mode-badge').textContent = 'painel privado';
+  document.getElementById('mode-badge').className = 'mode-badge private';
+  showView('view-private-home');
+  loadPrivateProjects();
+  updateNavForMode();
+}
+
+function setPublicMode() {
+  isPrivate = false;
+  sessionStorage.removeItem('sdd-auth');
+  document.getElementById('mode-badge').textContent = 'modo público';
+  document.getElementById('mode-badge').className = 'mode-badge public';
+  updateNavForMode();
+}
+
+function updateNavForMode() {
+  const navProj = document.getElementById('nav-projects');
+  const navDec = document.getElementById('nav-decisions');
+  navProj.style.opacity = isPrivate ? '1' : '.35';
+  navDec.style.opacity = isPrivate ? '1' : '.35';
+}
+
+function handleModeToggle() {
+  if (isPrivate) {
+    setPublicMode();
+    showView('view-learn');
+    navTo('learn');
+  } else {
+    if (sessionStorage.getItem('sdd-auth')) {
+      setPrivateMode();
+    } else {
+      showView('view-login');
+    }
+  }
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function navTo(tab) {
+  if ((tab==='projects'||tab==='decisions') && !isPrivate) {
+    showView('view-login');
+    return;
+  }
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('nav-'+tab)?.classList.add('active');
+  if (tab==='learn') { showView('view-learn'); }
+  if (tab==='projects') { showView('view-private-home'); loadPrivateProjects(); }
+  if (tab==='decisions') { showView('view-decisions'); loadDecisions(); }
+}
+
+function backToProject() {
+  showView('view-project');
+  loadProjectView(currentProjectId);
+}
+
+// ============================================================
+// LEARN PHASE CARDS
+// ============================================================
+function renderLearnPhases() {
+  const el = document.getElementById('learn-phases');
+  el.innerHTML = PHASES.map(p=>`
+    <div class="learn-card">
+      <div class="learn-header" onclick="toggleLearnCard(${p.id})">
+        <div style="flex:1">
+          <div class="learn-phase-tag">${p.label}</div>
+          <div class="learn-title" style="margin-top:.4rem">${p.title}</div>
+          <div class="learn-desc">${p.desc}</div>
+        </div>
+        <div class="learn-toggle" id="lt-${p.id}">∨</div>
+      </div>
+      <div class="learn-body" id="lb-${p.id}">
+        <div class="learn-why">
+          <div class="learn-why-label">Por que esta fase existe</div>
+          <div class="learn-why-text">${p.why}</div>
+        </div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5rem">Gates obrigatórios</div>
+        <div class="learn-gates">
+          ${p.gates.map((g,i)=>`
+            <div class="learn-gate">
+              <div class="learn-gate-num">0${i+1}</div>
+              <div>
+                <div class="learn-gate-text">${g.text}</div>
+                <div class="learn-gate-why">${g.why}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleLearnCard(id) {
+  const body = document.getElementById('lb-'+id);
+  const tog = document.getElementById('lt-'+id);
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  tog.classList.toggle('open', !isOpen);
+  tog.textContent = isOpen ? '∨' : '∧';
+}
+
+// ============================================================
+// SIMULATOR
+// ============================================================
+const SIM_PROJECT = {
+  name: 'Portal do Instrutor',
+  problem: 'Instrutores não conseguem visualizar suas turmas, presenças e carga horária em tempo real. Hoje precisam ligar para a secretaria ou esperar relatório semanal.',
+  goal: 'Reduzir tempo de acesso à informação de 48h (relatório semanal) para menos de 1 minuto (self-service).'
+};
+
+function startSimulator() {
+  simPhase = 0;
+  simGates = PHASES.map(p => new Array(p.gates.length).fill(false));
+  showView('view-sim');
+  renderSimPhase();
+}
+
+function clearSimState() {
+  simPhase = 0;
+  simGates = [];
+}
+
+function renderSimPhase() {
+  const p = PHASES[simPhase];
+  document.getElementById('sim-title').textContent = p.label + ' — ' + p.title;
+  document.getElementById('sim-desc').textContent = p.desc;
+
+  const done = simGates[simPhase].filter(Boolean).length;
+  const total = p.gates.length;
+  const allDone = done === total;
+
+  let html = `
+    <div class="insight-box">
+      <div class="insight-label">Contexto do projeto simulado</div>
+      <div class="insight-text"><strong style="color:var(--text)">${SIM_PROJECT.name}</strong><br>${simPhase===0 ? SIM_PROJECT.problem : simPhase===1 ? SIM_PROJECT.goal : p.why}</div>
+    </div>
+    <div class="prog-summary">
+      <div class="prog-label">gates concluídos</div>
+      <div class="prog-count"><em>${done}</em> / ${total}</div>
+    </div>
+    <div style="margin-bottom:1rem">
+      ${p.gates.map((g,i)=>`
+        <div class="gate-item">
+          <div class="gate-chk ${simGates[simPhase][i]?'chk':''}" onclick="toggleSimGate(${i})"></div>
+          <div style="flex:1">
+            <div class="gate-text ${simGates[simPhase][i]?'done':''}">${g.text}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px;font-style:italic">${g.why}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+
+  if (simPhase < PHASES.length - 1) {
+    html += `<button class="btn btn-green" ${allDone?'':'disabled'} onclick="advanceSimPhase()">Concluir ${p.label} e avançar →</button>`;
+  } else {
+    html += allDone
+      ? `<div style="text-align:center;padding:1.5rem;color:var(--green);font-family:var(--mono);font-size:13px">✓ Simulação concluída!<br><span style="color:var(--text2);font-size:12px">Você completou todas as 6 fases do SDD.</span></div><button class="btn btn-outline" onclick="showView('view-learn');clearSimState()">Voltar ao guia</button>`
+      : `<button class="btn btn-green" disabled>Concluir Fase 5</button>`;
+  }
+
+  document.getElementById('sim-content').innerHTML = html;
+}
+
+function toggleSimGate(i) {
+  simGates[simPhase][i] = !simGates[simPhase][i];
+  renderSimPhase();
+}
+
+function advanceSimPhase() {
+  if (!simGates[simPhase].every(Boolean)) return;
+  simPhase++;
+  renderSimPhase();
+}
+
+// ============================================================
+// PRIVATE PROJECTS
+// ============================================================
+async function loadPrivateProjects() {
+  const el = document.getElementById('private-proj-list');
+  el.innerHTML = '<div class="loading">carregando projetos...</div>';
   try {
-    const s = localStorage.getItem('sdd-hub-v1');
-    return s ? JSON.parse(s) : { projects: [], decisions: [] };
-  } catch(e) { return { projects: [], decisions: [] }; }
+    const projects = await getProjects();
+    if (!projects || !projects.length) {
+      el.innerHTML = '<div class="empty">Nenhum projeto ainda.<br>Crie o primeiro abaixo.</div>';
+      return;
+    }
+    el.innerHTML = projects.map(p => {
+      const phases = p.phases || [];
+      const done = phases.filter(ph=>ph.status==='done').length;
+      const pct = phases.length ? Math.round(done/phases.length*100) : 0;
+      const activeIdx = phases.findIndex(ph=>ph.status==='active');
+      const active = activeIdx >= 0 ? PHASES[activeIdx] : PHASES[phases.filter(ph=>ph.status==='done').length] || PHASES[5];
+      const allDone = phases.every(ph=>ph.status==='done');
+      return `<div class="card card-clickable" onclick="loadProjectView('${p.id}')">
+        <div class="proj-header">
+          <div class="proj-name">${p.name}</div>
+          <div class="proj-badge ${allDone?'badge-done':'badge-active'}">${allDone?'concluído':'ativo'}</div>
+        </div>
+        <div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div></div>
+        <div class="proj-meta">${active.label} — ${active.title} · <span>${pct}%</span></div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="empty">Erro ao carregar projetos.<br>' + e.message + '</div>';
+  }
 }
 
-function saveState() {
-  localStorage.setItem('sdd-hub-v1', JSON.stringify(state));
+async function loadProjectView(id) {
+  currentProjectId = id;
+  showView('view-project');
+  document.getElementById('proj-title').textContent = '...';
+  document.getElementById('proj-problem').textContent = '';
+  document.getElementById('proj-phases').innerHTML = '<div class="loading">carregando...</div>';
+
+  try {
+    const p = await getProject(id);
+    if (!p) return;
+    document.getElementById('proj-title').textContent = p.name;
+    document.getElementById('proj-problem').textContent = p.problem || '';
+
+    const phases = p.phases || [];
+    const done = phases.filter(ph=>ph.status==='done').length;
+    const pct = Math.round(done/phases.length*100);
+
+    document.getElementById('proj-status-row').innerHTML = `
+      <div class="stat-chip">${pct}% concluído</div>
+      <div class="stat-chip">${done}/6 fases</div>
+      <div class="stat-chip">criado ${new Date(p.created_at).toLocaleDateString('pt-BR')}</div>`;
+
+    document.getElementById('proj-phases').innerHTML = phases.map((ph,i) => {
+      const tmpl = PHASES[i];
+      const gDone = (ph.gates||[]).filter(Boolean).length;
+      let dotCls='dot-locked', rowCls='ph-locked', dotChar='—';
+      if(ph.status==='done'){dotCls='dot-done';rowCls='ph-done';dotChar='✓';}
+      else if(ph.status==='active'){dotCls='dot-active';rowCls='ph-active';dotChar=i;}
+      else if(ph.status==='pending'){dotCls='dot-pending';rowCls='ph-pending';dotChar=i;}
+      const clickable = ph.status!=='locked';
+      return `<div class="phase-row ${rowCls}" ${clickable?`onclick="openPhaseDetail('${id}',${i})"`:''}">
+        <div class="ph-dot ${dotCls}">${dotChar}</div>
+        <div class="ph-info">
+          <div class="ph-title">${tmpl.label} — ${tmpl.title}</div>
+          <div class="ph-sub">${ph.status==='done'?'Concluído':ph.status==='active'?`${gDone}/${tmpl.gates.length} gates`:ph.status==='locked'?'Bloqueado':'Aguardando'}</div>
+        </div>
+        ${clickable?'<div class="ph-arrow">›</div>':''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('proj-phases').innerHTML = '<div class="empty">Erro: '+e.message+'</div>';
+  }
 }
 
+async function openPhaseDetail(projectId, phaseIdx) {
+  currentProjectId = projectId;
+  currentPhaseIdx = phaseIdx;
+  showView('view-phase');
+
+  const tmpl = PHASES[phaseIdx];
+  document.getElementById('pd-title').textContent = tmpl.label + ' — ' + tmpl.title;
+  document.getElementById('pd-desc').textContent = tmpl.desc;
+  document.getElementById('pd-content').innerHTML = '<div class="loading">carregando...</div>';
+
+  try {
+    const p = await getProject(projectId);
+    const ph = p.phases[phaseIdx];
+
+    if (ph.status === 'locked') {
+      document.getElementById('pd-content').innerHTML = `
+        <div class="locked-box">
+          <div class="locked-icon">◎</div>
+          <div class="locked-title">Fase bloqueada</div>
+          <div class="locked-sub">Conclua e aprove todos os gates da fase anterior para desbloquear esta etapa.</div>
+        </div>`;
+      return;
+    }
+
+    const gates = ph.gates || new Array(tmpl.gates.length).fill(false);
+    const done = gates.filter(Boolean).length;
+    const allDone = done === tmpl.gates.length;
+    const docs = ph.docs || {};
+
+    let html = `
+      <div class="insight-box">
+        <div class="insight-label">Por que esta fase existe</div>
+        <div class="insight-text">${tmpl.why}</div>
+      </div>
+      <div class="prog-summary">
+        <div class="prog-label">gates concluídos</div>
+        <div class="prog-count"><em>${done}</em> / ${tmpl.gates.length}</div>
+      </div>
+      <div class="label" style="margin-top:0">Checklist obrigatório</div>
+      <div style="margin-bottom:1.25rem">
+        ${tmpl.gates.map((g,i)=>`
+          <div class="gate-item">
+            <div class="gate-chk ${gates[i]?'chk':''}" onclick="toggleGate('${projectId}',${phaseIdx},${i})"></div>
+            <div style="flex:1">
+              <div class="gate-text ${gates[i]?'done':''}">${g.text}</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:3px;font-style:italic">${g.why}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="label">Documentação desta fase</div>
+      ${tmpl.doc_fields.map(f=>`
+        <div class="doc-section">
+          <div class="doc-title">${f.label}</div>
+          <textarea class="doc-textarea" id="doc-${f.key}" placeholder="${f.placeholder}" onblur="saveDoc('${projectId}',${phaseIdx},'${f.key}')">${docs[f.key]||''}</textarea>
+          <div class="doc-saved" id="saved-${f.key}">✓ salvo</div>
+        </div>`).join('')}`;
+
+    if (ph.status !== 'done') {
+      html += `<button class="btn btn-green" id="advance-btn" ${allDone?'':'disabled'} onclick="advancePhase('${projectId}',${phaseIdx})">Concluir fase e liberar próxima</button>`;
+    } else {
+      html += `<div style="text-align:center;padding:1rem;font-family:var(--mono);font-size:12px;color:var(--green)">✓ fase concluída</div>`;
+    }
+
+    document.getElementById('pd-content').innerHTML = html;
+  } catch(e) {
+    document.getElementById('pd-content').innerHTML = '<div class="empty">Erro: '+e.message+'</div>';
+  }
+}
+
+async function toggleGate(projectId, phaseIdx, gateIdx) {
+  try {
+    const p = await getProject(projectId);
+    const phases = p.phases;
+    const ph = phases[phaseIdx];
+    if (!ph.gates) ph.gates = new Array(PHASES[phaseIdx].gates.length).fill(false);
+    ph.gates[gateIdx] = !ph.gates[gateIdx];
+    await updateProject(projectId, {phases});
+    openPhaseDetail(projectId, phaseIdx);
+  } catch(e) { showToast('Erro ao salvar'); }
+}
+
+async function saveDoc(projectId, phaseIdx, key) {
+  try {
+    const val = document.getElementById('doc-'+key).value;
+    const p = await getProject(projectId);
+    const phases = p.phases;
+    if (!phases[phaseIdx].docs) phases[phaseIdx].docs = {};
+    phases[phaseIdx].docs[key] = val;
+    await updateProject(projectId, {phases});
+    const el = document.getElementById('saved-'+key);
+    if (el) { el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1500); }
+  } catch(e) { showToast('Erro ao salvar'); }
+}
+
+async function advancePhase(projectId, phaseIdx) {
+  try {
+    const p = await getProject(projectId);
+    const phases = p.phases;
+    if (!phases[phaseIdx].gates.every(Boolean)) return;
+    phases[phaseIdx].status = 'done';
+    if (phaseIdx+1 < phases.length) phases[phaseIdx+1].status = 'active';
+    if (phaseIdx+2 < phases.length && phases[phaseIdx+2].status === 'locked') phases[phaseIdx+2].status = 'pending';
+    await updateProject(projectId, {phases});
+    showToast('Fase concluída. Próxima desbloqueada.');
+    loadProjectView(projectId);
+    showView('view-project');
+  } catch(e) { showToast('Erro: '+e.message); }
+}
+
+// ============================================================
+// CREATE PROJECT
+// ============================================================
+async function createProject() {
+  const name = document.getElementById('np-name').value.trim();
+  const problem = document.getElementById('np-problem').value.trim();
+  const goal = document.getElementById('np-goal').value.trim();
+  const constraints = document.getElementById('np-constraints').value.trim();
+
+  if (!name || !problem || !goal) { showToast('Preencha todos os campos obrigatórios.'); return; }
+
+  const phases = PHASES.map((t,i) => ({
+    status: i===0?'active': i===1?'pending':'locked',
+    gates: new Array(t.gates.length).fill(false),
+    docs: {}
+  }));
+
+  try {
+    const proj = await createProjectDB({name, problem, goal, constraints, phases});
+    document.getElementById('np-name').value='';
+    document.getElementById('np-problem').value='';
+    document.getElementById('np-goal').value='';
+    document.getElementById('np-constraints').value='';
+    showToast('Projeto criado. Fase 0 iniciada.');
+    loadProjectView(proj.id);
+  } catch(e) { showToast('Erro ao criar: '+e.message); }
+}
+
+// ============================================================
+// DECISIONS
+// ============================================================
+async function loadDecisions() {
+  const el = document.getElementById('dec-content');
+  el.innerHTML = '<div class="loading">carregando...</div>';
+  try {
+    const decs = await getDecisions();
+
+    let html = `
+      <div class="add-dec-form">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">Registrar nova decisão</div>
+        <div class="form-group">
+          <label class="form-label">Projeto</label>
+          <input class="form-input" id="dec-proj" placeholder="Nome do projeto">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Decisão tomada</label>
+          <textarea class="form-input form-textarea" id="dec-decision" placeholder="Qual foi a decisão?" style="min-height:60px"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:.75rem">
+          <label class="form-label">Justificativa</label>
+          <textarea class="form-input form-textarea" id="dec-reason" placeholder="Por que esta decisão? Alternativa descartada?" style="min-height:60px"></textarea>
+        </div>
+        <button class="btn btn-outline" style="margin:0;padding:10px" onclick="addDecision()">Registrar decisão</button>
+      </div>`;
+
+    if (!decs || !decs.length) {
+      html += '<div class="empty">Nenhuma decisão registrada ainda.</div>';
+    } else {
+      html += '<div class="label">Decisões registradas</div>';
+      html += decs.map(d=>`
+        <div class="dec-item">
+          <div class="dec-meta">${new Date(d.created_at).toLocaleDateString('pt-BR')} · ${d.project||'—'}</div>
+          <div class="dec-decision">${d.decision}</div>
+          <div class="dec-reason">${d.reason||''}</div>
+        </div>`).join('');
+    }
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div class="empty">Erro: '+e.message+'</div>';
+  }
+}
+
+async function addDecision() {
+  const proj = document.getElementById('dec-proj').value.trim();
+  const decision = document.getElementById('dec-decision').value.trim();
+  const reason = document.getElementById('dec-reason').value.trim();
+  if (!decision) { showToast('Escreva a decisão.'); return; }
+  try {
+    await createDecision({project: proj, decision, reason});
+    showToast('Decisão registrada.');
+    loadDecisions();
+  } catch(e) { showToast('Erro: '+e.message); }
+}
+
+// ============================================================
+// TOAST
+// ============================================================
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  setTimeout(()=>t.classList.remove('show'), 2500);
 }
 
-function showView(id) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0, 0);
-}
-
-function navTo(tab) {
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('nav-' + tab).classList.add('active');
-  if (tab === 'home') { renderHome(); showView('view-home'); }
-  if (tab === 'log') { renderLog(); showView('view-log'); }
-}
-
-function getActivePhaseIndex(project) {
-  for (let i = 0; i < project.phases.length; i++) {
-    if (project.phases[i].status === 'active') return i;
-  }
-  return project.phases.filter(p => p.status === 'done').length;
-}
-
-function getProgressPct(project) {
-  const done = project.phases.filter(p => p.status === 'done').length;
-  return Math.round(done / project.phases.length * 100);
-}
-
-function renderHome() {
-  const list = document.getElementById('project-list');
-  if (!state.projects.length) {
-    list.innerHTML = '<div class="empty-state">Nenhum projeto ainda.<br>Crie o primeiro abaixo.</div>';
-    return;
-  }
-  list.innerHTML = state.projects.map((p, idx) => {
-    const pct = getProgressPct(p);
-    const activeIdx = getActivePhaseIndex(p);
-    const activePhase = PHASE_TEMPLATES[activeIdx] || PHASE_TEMPLATES[5];
-    const allDone = p.phases.every(ph => ph.status === 'done');
-    return `<div class="project-item" onclick="openProject(${idx})">
-      <div class="project-item-header">
-        <div class="project-name">${p.name}</div>
-        <div class="project-badge ${allDone ? 'locked' : ''}">${allDone ? 'concluído' : 'ativo'}</div>
-      </div>
-      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-      <div class="project-meta">fase atual: <span>${activePhase.label} — ${activePhase.title}</span> · <span>${pct}%</span></div>
-    </div>`;
-  }).join('');
-}
-
-function openProject(idx) {
-  currentProject = idx;
-  const p = state.projects[idx];
-  document.getElementById('pv-title').textContent = p.name;
-  document.getElementById('pv-sub').textContent = p.problem;
-  renderProjectPhases(p);
-  showView('view-project');
-}
-
-function renderProjectPhases(p) {
-  const list = document.getElementById('pv-phases');
-  list.innerHTML = p.phases.map((ph, i) => {
-    const tmpl = PHASE_TEMPLATES[i];
-    const doneCount = ph.gates.filter(g => g).length;
-    const total = tmpl.gates.length;
-    let dotClass = 'dot-locked', rowClass = 'is-locked';
-    let dotContent = '—';
-    if (ph.status === 'done') { dotClass = 'dot-done'; rowClass = 'is-done'; dotContent = '✓'; }
-    else if (ph.status === 'active') { dotClass = 'dot-active'; rowClass = 'is-active'; dotContent = tmpl.id; }
-    else if (ph.status === 'pending') { dotClass = 'dot-pending'; rowClass = ''; dotContent = tmpl.id; }
-    const clickable = ph.status !== 'locked';
-    return `<div class="phase-row ${rowClass}" onclick="${clickable ? `openPhase(${i})` : ''}">
-      <div class="phase-dot ${dotClass}">${dotContent}</div>
-      <div class="phase-info">
-        <div class="phase-title">${tmpl.label} — ${tmpl.title}</div>
-        <div class="phase-desc">${ph.status === 'done' ? 'Concluído' : ph.status === 'active' ? `${doneCount}/${total} gates` : ph.status === 'locked' ? 'Bloqueado' : 'Aguardando'}</div>
-      </div>
-      ${clickable ? '<div class="phase-arrow">›</div>' : ''}
-    </div>`;
-  }).join('');
-}
-
-function openPhase(phaseIdx) {
-  currentPhase = phaseIdx;
-  const p = state.projects[currentProject];
-  const ph = p.phases[phaseIdx];
-  const tmpl = PHASE_TEMPLATES[phaseIdx];
-
-  document.getElementById('pd-title').textContent = `${tmpl.label} — ${tmpl.title}`;
-  document.getElementById('pd-desc').textContent = tmpl.desc;
-  document.getElementById('phase-back-label').textContent = p.name;
-  document.getElementById('phase-back-btn').onclick = () => { openProject(currentProject); };
-
-  const content = document.getElementById('pd-content');
-
-  if (ph.status === 'locked') {
-    content.innerHTML = `<div class="locked-notice">
-      <strong>Fase bloqueada</strong>
-      Complete e aprove a fase anterior para desbloquear esta etapa.
-    </div>`;
-    showView('view-phase');
-    return;
-  }
-
-  const doneCount = ph.gates.filter(g => g).length;
-  const total = tmpl.gates.length;
-  const allDone = doneCount === total;
-
-  let html = `<div class="progress-summary">
-    <div class="progress-label">gates concluídos</div>
-    <div class="progress-count"><span>${doneCount}</span> / ${total}</div>
-  </div>
-  <div class="gate-section">
-    <div class="gate-section-label">Checklist obrigatório</div>
-    ${tmpl.gates.map((g, i) => `
-      <div class="gate-item">
-        <div class="gate-check ${ph.gates[i] ? 'checked' : ''}" onclick="toggleGate(${phaseIdx}, ${i})"></div>
-        <div class="gate-text ${ph.gates[i] ? 'is-done' : ''}">${g}</div>
-      </div>`).join('')}
-  </div>`;
-
-  if (ph.status !== 'done') {
-    html += `<button class="action-btn btn-primary" ${allDone ? '' : 'disabled'} onclick="advancePhase(${phaseIdx})">
-      Concluir fase e liberar próxima
-    </button>`;
-  } else {
-    html += `<div style="text-align:center;padding:1rem;font-family:var(--mono);font-size:12px;color:var(--green)">✓ fase concluída</div>`;
-  }
-
-  content.innerHTML = html;
-  showView('view-phase');
-}
-
-function toggleGate(phaseIdx, gateIdx) {
-  const p = state.projects[currentProject];
-  const ph = p.phases[phaseIdx];
-  if (ph.status === 'done' || ph.status === 'locked') return;
-  ph.gates[gateIdx] = !ph.gates[gateIdx];
-  saveState();
-  openPhase(phaseIdx);
-}
-
-function advancePhase(phaseIdx) {
-  const p = state.projects[currentProject];
-  const ph = p.phases[phaseIdx];
-  if (!ph.gates.every(g => g)) return;
-  ph.status = 'done';
-  if (phaseIdx + 1 < p.phases.length) {
-    p.phases[phaseIdx + 1].status = phaseIdx + 2 < p.phases.length ? 'active' : 'active';
-  }
-  saveState();
-  showToast('Fase concluída. Próxima desbloqueada.');
-  openProject(currentProject);
-}
-
-function createProject() {
-  const name = document.getElementById('np-name').value.trim();
-  const problem = document.getElementById('np-problem').value.trim();
-  const goal = document.getElementById('np-goal').value.trim();
-  const owner = document.getElementById('np-owner').value.trim() || 'Jefferson';
-
-  if (!name || !problem || !goal) {
-    showToast('Preencha todos os campos.');
-    return;
-  }
-
-  const phases = PHASE_TEMPLATES.map((t, i) => ({
-    status: i === 0 ? 'active' : i === 1 ? 'pending' : 'locked',
-    gates: new Array(t.gates.length).fill(false)
-  }));
-
-  state.projects.push({ name, problem, goal, owner, createdAt: new Date().toISOString(), phases });
-  saveState();
-
-  document.getElementById('np-name').value = '';
-  document.getElementById('np-problem').value = '';
-  document.getElementById('np-goal').value = '';
-
-  showToast('Projeto criado. Fase 0 iniciada.');
-  openProject(state.projects.length - 1);
-  document.getElementById('nav-home').classList.add('active');
-  document.getElementById('nav-log').classList.remove('active');
-}
-
-function renderLog() {
-  const el = document.getElementById('log-content');
-  const decisions = state.decisions || [];
-  if (!decisions.length) {
-    el.innerHTML = '<div class="empty-state">Nenhuma decisão registrada ainda.</div>';
-    return;
-  }
-  el.innerHTML = decisions.map(d => `
-    <div class="log-item">
-      <div class="log-date">${d.date} · ${d.project}</div>
-      <div class="log-decision">${d.decision}</div>
-      <div class="log-reason">${d.reason}</div>
-    </div>`).join('');
-}
-
-// Seed CRJ Ops Hub
-function seedCRJ() {
-  if (state.projects.find(p => p.name === 'CRJ Ops Hub')) return;
-  const phases = PHASE_TEMPLATES.map((t, i) => {
-    if (i === 0) return { status: 'done', gates: new Array(t.gates.length).fill(true) };
-    if (i === 1) return {
-      status: 'active',
-      gates: [true, true, true, true, true, false]
-    };
-    if (i === 2) return { status: 'pending', gates: new Array(t.gates.length).fill(false) };
-    return { status: 'locked', gates: new Array(t.gates.length).fill(false) };
-  });
-  state.projects.unshift({
-    name: 'CRJ Ops Hub',
-    problem: 'Sistema nativo do CRJ é instável. A gestão de múltiplas unidades (JAC, MAN, VP, PPG) exige controle de presenças, instrutores, elegibilidade para formatura e fila de espera — funcionalidades que a plataforma atual não entrega com confiabilidade.',
-    goal: 'Substituir dependência da plataforma nativa por sistema próprio em Google Workspace, com scraping Python, Sheets como banco central e Looker Studio para visualização.',
-    owner: 'Jefferson',
-    createdAt: '2026-04-07T00:00:00.000Z',
-    phases
-  });
-  state.decisions = [
-    { date: '07/04/2026', project: 'CRJ Ops Hub', decision: 'Matrícula numérica como chave universal de junção', reason: 'ID estável e único. CPF mantido como fallback por ser dado sensível.' },
-    { date: '07/04/2026', project: 'CRJ Ops Hub', decision: 'Credenciais migradas para .env — nunca hardcoded', reason: 'Segurança básica. Evita exposição acidental em logs ou Git.' },
-    { date: '07/04/2026', project: 'CRJ Ops Hub', decision: 'Sleep 2000ms a cada 20 eventos no Calendar API', reason: 'Resolve rate limit sem impacto significativo no tempo de execução.' },
-    { date: '07/04/2026', project: 'CRJ Ops Hub', decision: 'Régua de fila de espera: faixa etária → data inscrição → histórico → horário → geografia → NIS', reason: 'Decisão tomada com Jefferson em 07/04/2026 após análise das regras de negócio do CRJ.' }
-  ];
-  saveState();
-}
-
-seedCRJ();
-renderHome();
+// ============================================================
+// INIT
+// ============================================================
+renderLearnPhases();
+updateNavForMode();
+if (sessionStorage.getItem('sdd-auth')) setPrivateMode();
 </script>
 </body>
 </html>
