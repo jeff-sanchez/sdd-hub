@@ -268,7 +268,7 @@ button,input,textarea,select{font-family:var(--sans)}
     <div class="scrollable">
       <div class="screen-title">Simulador<br><strong>interativo</strong></div>
       <div class="screen-sub">Experimente o fluxo SDD completo com um projeto fictício. Tudo que você preencher fica salvo no cache do seu browser — se sair e voltar, encontra onde parou.</div>
-      <div class="sim-badge">modo simulação — projeto fictício — salvo no seu navegador</div>
+      <div class="sim-badge" id="sim-project-badge">modo simulação — salvo no seu navegador</div>
 
       <div class="sim-phase-tabs" id="sim-phase-tabs"></div>
 
@@ -276,6 +276,44 @@ button,input,textarea,select{font-family:var(--sans)}
       <div id="sim-gate-card" class="card" style="margin-bottom:.65rem"></div>
       <div id="sim-doc-card" class="card" style="margin-bottom:.65rem"></div>
       <div id="sim-advance"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       SCREEN: SIM BRIEFING
+  ═══════════════════════════════════ -->
+  <div class="screen" id="screen-sim-briefing">
+    <div class="scrollable">
+      <div class="screen-title" style="margin-top:.5rem">Seu<br><strong>projeto</strong></div>
+      <div class="screen-sub">Antes de começar, defina o projeto que você vai documentar. Isso torna a jornada real — e o PDF gerado no final será a documentação do <em>seu</em> projeto, não de um exemplo genérico.</div>
+
+      <div class="card card-accent-amber" style="margin-bottom:1rem">
+        <div class="card-body">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem">dica antes de começar</div>
+          <div style="font-size:13px;color:var(--t2);line-height:1.6">Pode ser qualquer projeto — um sistema que você quer construir, uma ideia que está na sua cabeça, ou um problema real que enfrenta no trabalho. Quanto mais específico, mais útil será o documento final.</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Nome do projeto *</label>
+        <input class="form-input" id="sb-name" type="text" placeholder="Ex: Sistema de agendamento, App de controle financeiro...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Qual dor este projeto resolve? *</label>
+        <textarea class="form-input form-ta" id="sb-problem" placeholder="Descreva o problema real. Quem sofre com isso hoje? Com que frequência? Qual o impacto?"></textarea>
+        <div class="form-hint">Evite generalidades. Prefira: "Minha equipe perde 2h/semana fazendo relatórios manualmente" a "melhorar a produtividade".</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Objetivo mensurável *</label>
+        <input class="form-input" id="sb-goal" type="text" placeholder="Ex: Reduzir tempo de relatório de 2h para 15min via automação">
+        <div class="form-hint">Precisa ter um número ou critério verificável. Sem isso, não existe definição de sucesso.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Restrições conhecidas</label>
+        <textarea class="form-input form-ta" id="sb-constraints" placeholder="O que não pode mudar? O que não está disponível? Ex: sem budget para servidor, sistema legado deve ser preservado..." style="min-height:70px"></textarea>
+      </div>
+      <button class="btn btn-green" onclick="startSimWithBriefing()">Iniciar jornada SDD →</button>
+      <button class="btn btn-outline" onclick="switchMainTab('guide')">Voltar ao guia</button>
     </div>
   </div>
 
@@ -527,7 +565,8 @@ function _simDefaults(){
   return {
     simPhase: 0,
     simGates: PHASES.map(p=>new Array(p.gates.length).fill(false)),
-    simDocs: PHASES.map(p=>{const o={};p.docs.forEach(d=>o[d.key]='');return o;})
+    simDocs: PHASES.map(p=>{const o={};p.docs.forEach(d=>o[d.key]='');return o;}),
+    simProject: {name:'', problem:'', goal:'', constraints:''}
   };
 }
 function _loadSim(){
@@ -535,13 +574,14 @@ function _loadSim(){
   catch(e){ return _simDefaults(); }
 }
 function _saveSim(){
-  try{ localStorage.setItem(SIM_KEY,JSON.stringify({simPhase,simGates,simDocs})); }
+  try{ localStorage.setItem(SIM_KEY,JSON.stringify({simPhase,simGates,simDocs,simProject})); }
   catch(e){}
 }
 const _s = _loadSim();
 let simPhase = _s.simPhase;
 let simGates = _s.simGates;
 let simDocs  = _s.simDocs;
+let simProject = _s.simProject || {name:'',problem:'',goal:'',constraints:''};
 
 // ─────────────────────────────────────
 // STATE
@@ -624,11 +664,36 @@ function switchMainTab(tab){
   currentMainTab=tab;
   document.querySelectorAll('.main-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('mtab-'+tab)?.classList.add('active');
-  const map={guide:'screen-guide',sim:'screen-sim',projects:'screen-projects',decisions:'screen-decisions'};
+  const map={guide:'screen-guide',sim:simProject.name?'screen-sim':'screen-sim-briefing',projects:'screen-projects',decisions:'screen-decisions'};
   showScreen(map[tab]);
   if(tab==='projects')loadProjects();
   if(tab==='decisions')loadDecisions();
   if(tab==='sim')renderSim();
+}
+
+// ─────────────────────────────────────
+// SIM BRIEFING
+// ─────────────────────────────────────
+function goToSimBriefing(){
+  if(simProject.name){
+    // Já tem projeto — pergunta se quer continuar ou reiniciar
+    showScreen('screen-sim');
+    renderSim();
+  } else {
+    showScreen('screen-sim-briefing');
+  }
+}
+
+function startSimWithBriefing(){
+  const name = document.getElementById('sb-name').value.trim();
+  const problem = document.getElementById('sb-problem').value.trim();
+  const goal = document.getElementById('sb-goal').value.trim();
+  const constraints = document.getElementById('sb-constraints').value.trim();
+  if(!name||!problem||!goal){showToast('Preencha os campos obrigatórios.');return;}
+  simProject = {name, problem, goal, constraints};
+  _saveSim();
+  showScreen('screen-sim');
+  renderSim();
 }
 
 // ─────────────────────────────────────
@@ -674,6 +739,11 @@ function toggleGuideCard(id){
 // SIMULATOR
 // ─────────────────────────────────────
 function renderSim(){
+  // Update badge with project name
+  const badge = document.getElementById('sim-project-badge');
+  if(badge && simProject.name){
+    badge.innerHTML = `<span style="color:var(--green)">${simProject.name}</span> &nbsp;·&nbsp; simulação &nbsp;·&nbsp; <span style="cursor:pointer;text-decoration:underline" onclick="showScreen('screen-sim-briefing')">trocar projeto</span>`;
+  }
   const tabs=document.getElementById('sim-phase-tabs');
   tabs.innerHTML=PHASES.map(p=>{
     let cls='sim-ptab';
@@ -693,11 +763,16 @@ function renderSimPhase(){
   const total=p.gates.length;
   const allDone=done===total;
 
+  const projName = simProject.name || SIM.name;
+  const projProblem = simProject.problem || SIM.problem;
+  const projGoal = simProject.goal || SIM.goal;
+  const contextHint = simPhase===0 ? projProblem : simPhase===1 ? `Objetivo: ${projGoal}` : SIM.context[simPhase];
+
   document.getElementById('sim-ctx-card').innerHTML=`
     <div class="card-body">
       <div class="ctx-tag" style="color:var(--blue)">${p.code}: ${p.title.split('—')[1].trim()}</div>
-      <div style="font-size:13px;font-weight:500;margin-bottom:.35rem">${SIM.name}</div>
-      <div style="font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:.75rem">${SIM.context[simPhase]}</div>
+      <div style="font-size:13px;font-weight:500;margin-bottom:.35rem">${projName}</div>
+      <div style="font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:.75rem">${contextHint}</div>
       <div class="ctx-why">
         <div class="ctx-why-label">Por que esta fase existe</div>
         <div class="ctx-why-text">${p.why}</div>
@@ -767,11 +842,11 @@ function advanceSim(){
 function resetSim(){
   localStorage.removeItem(SIM_KEY);
   const d=_simDefaults();
-  simPhase=d.simPhase; simGates=d.simGates; simDocs=d.simDocs;
-  renderSim();
+  simPhase=d.simPhase; simGates=d.simGates; simDocs=d.simDocs; simProject=d.simProject;
+  showScreen('screen-sim-briefing');
 }
 function exportSimPDF(){
-  const projectName = prompt('Nome do seu projeto (para o documento):','Meu Projeto SDD') || 'Meu Projeto SDD';
+  const projectName = simProject.name || prompt('Nome do seu projeto (para o documento):','Meu Projeto SDD') || 'Meu Projeto SDD';
   const date = new Date().toLocaleDateString('pt-BR');
   let html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
   <title>Documentação SDD — ${projectName}</title>
@@ -798,6 +873,16 @@ function exportSimPDF(){
   <h1>Documentação SDD</h1>
   <div class="subtitle">${projectName}</div>
   <div class="meta">Gerado em ${date} via SDD Hub &nbsp;·&nbsp; Metodologia Spec-Driven Development &nbsp;·&nbsp; jeff-sanchez.github.io/sdd-hub</div>`;
+
+  // Capa com briefing do visitante
+  if(simProject.name){
+    html += `<div style="margin-bottom:2.5rem;padding-bottom:1.5rem;border-bottom:2px solid #1a1a1a">
+      <h2 style="border:none;margin-top:0;padding-top:0">Briefing do Projeto</h2>
+      <div class="field"><div class="field-label">Problema que resolve</div><div class="field-value">${simProject.problem||'—'}</div></div>
+      <div class="field"><div class="field-label">Objetivo mensurável</div><div class="field-value">${simProject.goal||'—'}</div></div>
+      ${simProject.constraints?`<div class="field"><div class="field-label">Restrições</div><div class="field-value">${simProject.constraints}</div></div>`:''}
+    </div>`;
+  }
 
   PHASES.forEach((p,i)=>{
     const gates = simGates[i];
