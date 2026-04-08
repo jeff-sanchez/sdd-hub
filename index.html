@@ -422,8 +422,8 @@ button,input,textarea,select{font-family:var(--sans)}
 // ─────────────────────────────────────
 const GEMINI_KEY = 'COLE_SUA_CHAVE_GEMINI_AQUI'; // aistudio.google.com → Get API Key
 const SB_URL = 'https://ednawgxsbwlnemlqyniv.supabase.co';
-const SB_KEY = 'COLE_SUA_CHAVE';
-const MASTER_HASH = 'COLE_SUA_CHAVE';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkbmF3Z3hzYndsbmVtbHF5bml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MDEyNTcsImV4cCI6MjA5MTE3NzI1N30.wUcqBz5gx0-Ge99WzfCZVu-C4YOGT5BTGr-YdeIKVv8';
+const MASTER_HASH = 'ffebc7010b40e7d106f138716ca113c93166c3f8a587a57310766e79c587a317';
 
 // ─────────────────────────────────────
 // PHASE DEFINITIONS
@@ -453,7 +453,7 @@ const PHASES = [
     id:1, code:'F1', label:'F1: Requisitos',
     title:'Fase 1 — Requisitos',
     tagline:'Define o contrato: o que o sistema faz, como se comporta e o que não pode mudar.',
-    why:'Requisitos são contratos. Um requisito mal escrito é um bug que ainda não aconteceu. A distinção entre RF (o que o sistema faz) e RNF (como se comporta) é fundamental — confundi-los é uma das causas mais comuns de retrabalho. Regras de negócio não documentadas são conhecimento na cabeça das pessoas — quando essas pessoas saem, o conhecimento vai junto.',
+    why:'Requisitos são contratos. Um requisito mal escrito é um bug que ainda não aconteceu. A distinção entre RF (o que o sistema faz) e RNF (como se comporta) é fundamental — confundi-los é uma das causas mais comuns de retrabalho. Regras de negócio não documentadas são conhecimento na cabeça das pessoas — quando essas pessoas saem, o conhecimento vai junto. ATENÇÃO DE SEGURANÇA: todo projeto com código em repositório público deve ter como RNF obrigatório a gestão segura de credenciais — nenhuma chave de API, token, senha ou secret pode aparecer no código-fonte.',
     what:'Lista de RFs numerados, RNFs com critérios mensuráveis, restrições técnicas e regras de negócio do domínio.',
     gates:[
       {text:'Requisitos Funcionais (RF) cobrem todas as funcionalidades críticas', why:'RF descrevem comportamento observável: "o sistema deve calcular X e exibir Y". Se não está listado, não será implementado.'},
@@ -461,13 +461,15 @@ const PHASES = [
       {text:'Restrições técnicas documentadas — o que NÃO pode mudar', why:'Restrições são tão importantes quanto requisitos. Ignorá-las garante retrabalho.'},
       {text:'Regras de negócio específicas do domínio documentadas', why:'Regras de negócio são o conhecimento que vive na cabeça das pessoas. Não documentar é aceitar que esse conhecimento pode ser perdido.'},
       {text:'Campos protegidos e auditáveis definidos (para sistemas com dados)', why:'Definir antes de implementar evita problemas de integridade de dados depois. Sobrescrever um campo com vazio é silencioso e devastador.'},
+      {text:'Estratégia de gestão de credenciais definida — nenhuma chave de API no código-fonte', why:'Chaves expostas em repositórios públicos são detectadas em minutos por scanners automatizados. Isso não é paranoia — é rotina de atacantes. A estratégia deve estar documentada antes de qualquer linha de código.'},
       {text:'Responsável aprovou os requisitos', why:'Gate formal. Os requisitos são o contrato — aprovação registrada evita contestação futura.'}
     ],
     docs:[
       {key:'rf', q:'Quais são os Requisitos Funcionais?', hint:'Use o formato: RF-01: O sistema deve [verbo] [objeto]. Numere para poder referenciar depois.', ph:'RF-01: O sistema deve coletar presenças do portal via scraping Python.\nRF-02: O sistema deve consolidar dados por unidade em abas de resumo.\nRF-03: O sistema deve calcular elegibilidade para formatura automaticamente.'},
       {key:'rnf', q:'Quais são os Requisitos Não-Funcionais?', hint:'Use o formato: RNF-01: [Propriedade] deve ser [critério mensurável]. Inclua: performance, segurança, disponibilidade, confiabilidade.', ph:'RNF-01: Execução completa dos 11 scripts em menos de 10 minutos.\nRNF-02: Nenhuma credencial hardcoded — uso obrigatório de .env.\nRNF-03: Máximo de 2000ms entre eventos no Calendar API.'},
       {key:'rules', q:'Quais são as regras de negócio do domínio?', hint:'Regras que definem como o sistema deve se comportar em situações específicas do contexto. Não são técnicas — são do negócio.', ph:'RN-01: Campo em branco no portal nunca sobrescreve dado preenchido no Sheets.\nRN-02: Instrutor em licença mantém registro histórico — não sobrescrever.\nRN-03: Fila de espera: faixa etária → data inscrição → histórico → horário → geografia → NIS.'},
-      {key:'protected', q:'Quais campos são protegidos ou auditáveis?', hint:'Protegidos: nunca sobrescrever com vazio. Auditáveis: logar quando mudar.', ph:'Protegidos (nunca sobrescrever com vazio): Nome, CPF, RG, Data de Nascimento, Instrutor em Turmas.\nAuditáveis (logar mudança): Instrutor, Status, Situação na Turma.'}
+      {key:'protected', q:'Quais campos são protegidos ou auditáveis?', hint:'Protegidos: nunca sobrescrever com vazio. Auditáveis: logar quando mudar.', ph:'Protegidos (nunca sobrescrever com vazio): Nome, CPF, RG, Data de Nascimento, Instrutor em Turmas.\nAuditáveis (logar mudança): Instrutor, Status, Situação na Turma.'},
+      {key:'credentials', q:'Como as credenciais e secrets serão gerenciadas?', hint:'Defina ANTES de implementar: onde ficam as chaves de API, tokens e senhas. Nunca no código-fonte, nunca em repositório público.', ph:'Chaves de API: armazenadas em Supabase Secrets (Edge Functions) — nunca no HTML ou JS público.\nCredenciais locais: arquivo .env na raiz do projeto — no .gitignore, nunca commitado.\nSenha mestra do sistema: armazenada como hash SHA-256 no código — a senha original nunca é armazenada.\nRepositório público: revisar diff antes de cada commit em busca de credenciais expostas.'}
     ]
   },
   {
@@ -502,6 +504,7 @@ const PHASES = [
       {text:'Contratos de interface definidos — entradas e saídas de cada componente', why:'Contratos permitem desenvolvimento paralelo e testes isolados. Sem eles, tudo depende de tudo.'},
       {text:'Impacto no sistema legado avaliado', why:'Sistemas legados têm dependências invisíveis. Ignorá-las é o caminho mais rápido para uma sexta-feira às 23h.'},
       {text:'Plano de rollback definido para componentes críticos', why:'Rollback sem plano é restaurar backup. Rollback com plano é voltar ao estado seguro em minutos.'},
+      {text:'Nenhuma credencial, chave de API ou secret no código-fonte ou repositório', why:'Esse gate existe porque já causou incidentes reais neste projeto. Chaves expostas são detectadas por scanners em minutos. Verificar antes de qualquer commit em repositório público.'},
       {text:'Responsável aprovou o design', why:'Gate formal. O design é o contrato técnico.'}
     ],
     docs:[
@@ -1393,20 +1396,19 @@ Faça uma análise crítica e construtiva deste campo em até 5 pontos curtos:
 Seja direto, específico e útil. Não elogie genericamente. Responda em português.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(AI_REVIEW_FN, {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        messages:[{role:'user',content:prompt}]
-      })
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer ' + SB_KEY
+      },
+      body: JSON.stringify({prompt})
     });
     const data = await res.json();
-    const text = data?.content?.[0]?.text || 'Não foi possível obter análise.';
+    const text = data?.text || data?.error || 'Não foi possível obter análise.';
     textEl.textContent = text;
   } catch(e){
-    textEl.textContent = 'Erro ao conectar com a IA. Tente novamente.';
+    textEl.textContent = 'Erro ao conectar. Verifique se a Edge Function está ativa no Supabase.';
   }
   btn.disabled = false;
   btn.textContent = '◎ revisar novamente';
