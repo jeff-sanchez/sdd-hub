@@ -1405,15 +1405,21 @@ Seja direto, específico e útil. Não elogie genericamente. Responda em portugu
       method:'POST',
       headers:{
         'Content-Type':'application/json',
-        'Authorization':'Bearer ' + SB_KEY
+        'Authorization':'Bearer ' + SB_KEY,
+        'apikey': SB_KEY
       },
       body: JSON.stringify({prompt})
     });
+    if(!res.ok){
+      const errText = await res.text();
+      textEl.textContent = 'Erro HTTP ' + res.status + ': ' + errText;
+      return;
+    }
     const data = await res.json();
-    const text = data?.text || data?.error || 'Não foi possível obter análise.';
+    const text = data?.text || data?.error || 'Sem resposta da IA.';
     textEl.textContent = text;
   } catch(e){
-    textEl.textContent = 'Erro ao conectar. Verifique se a Edge Function está ativa no Supabase.';
+    textEl.textContent = 'Erro: ' + e.message;
   }
   btn.disabled = false;
   btn.textContent = '◎ revisar novamente';
