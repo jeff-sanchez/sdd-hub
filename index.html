@@ -424,6 +424,7 @@ const GEMINI_KEY = 'COLE_SUA_CHAVE_GEMINI_AQUI'; // aistudio.google.com → Get 
 const SB_URL = 'https://ednawgxsbwlnemlqyniv.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkbmF3Z3hzYndsbmVtbHF5bml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MDEyNTcsImV4cCI6MjA5MTE3NzI1N30.wUcqBz5gx0-Ge99WzfCZVu-C4YOGT5BTGr-YdeIKVv8';
 const MASTER_HASH = 'ffebc7010b40e7d106f138716ca113c93166c3f8a587a57310766e79c587a317';
+const AI_REVIEW_FN = 'https://ednawgxsbwlnemlqyniv.supabase.co/functions/v1/ai-review';
 
 // ─────────────────────────────────────
 // PHASE DEFINITIONS
@@ -1419,7 +1420,10 @@ Seja direto, específico e útil. Não elogie genericamente. Responda em portugu
     const text = data?.text || data?.error || 'Sem resposta da IA.';
     textEl.textContent = text;
   } catch(e){
-    textEl.textContent = 'Erro: ' + e.message;
+    // Erro de rede — mais detalhes para diagnóstico
+    textEl.textContent = 'Erro de rede: ' + (e.message || e.toString()) + 
+      '\n\nURL tentada: ' + AI_REVIEW_FN +
+      '\n\nSe aparecer "Failed to fetch", o browser está bloqueando a requisição por CORS ou a URL está incorreta.';
   }
   btn.disabled = false;
   btn.textContent = '◎ revisar novamente';
