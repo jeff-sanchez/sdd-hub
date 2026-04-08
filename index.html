@@ -377,7 +377,7 @@ input,textarea{font-family:var(--sans)}
 // ============================================================
 const SUPABASE_URL = 'https://ednawgxsbwlnemlqyniv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkbmF3Z3hzYndsbmVtbHF5bml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MDEyNTcsImV4cCI6MjA5MTE3NzI1N30.wUcqBz5gx0-Ge99WzfCZVu-C4YOGT5BTGr-YdeIKVv8';
-const MASTER_HASH = 'REPLACE_WITH_HASH'; // será gerado abaixo
+const MASTER_HASH = 'ffebc7010b40e7d106f138716ca113c93166c3f8a587a57310766e79c587a317'; // será gerado abaixo
 // ============================================================
 
 // ============================================================
@@ -701,9 +701,10 @@ function toggleLearnCard(id) {
 // SIMULATOR
 // ============================================================
 const SIM_PROJECT = {
-  name: 'Portal do Instrutor',
-  problem: 'Instrutores não conseguem visualizar suas turmas, presenças e carga horária em tempo real. Hoje precisam ligar para a secretaria ou esperar relatório semanal.',
-  goal: 'Reduzir tempo de acesso à informação de 48h (relatório semanal) para menos de 1 minuto (self-service).'
+  name: 'App de Agendamento para Clínica',
+  problem: 'Pacientes de uma clínica médica pequena precisam ligar para agendar consultas. A recepcionista perde em média 3h/dia apenas com agendamentos por telefone, e pacientes frequentemente desistem por não conseguir linha.',
+  goal: 'Reduzir o tempo da recepcionista com agendamentos de 3h/dia para menos de 30min/dia, permitindo que pacientes agendem online 24h por dia.',
+  constraints: 'O sistema legado de prontuários não pode ser substituído. Não há budget para infraestrutura paga além de serviços gratuitos. A equipe de TI é composta por uma única pessoa.'
 };
 
 function startSimulator() {
