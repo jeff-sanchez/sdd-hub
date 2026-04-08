@@ -759,9 +759,6 @@ function jumpSim(idx){if(idx<=simPhase){simPhase=idx;renderSim();}}
 function renderSimPhase(){
   const p=PHASES[simPhase];
   const g=simGates[simPhase];
-  const done=g.filter(Boolean).length;
-  const total=p.gates.length;
-  const allDone=done===total;
 
   const projName = simProject.name || SIM.name;
   const projProblem = simProject.problem || SIM.problem;
@@ -779,22 +776,7 @@ function renderSimPhase(){
       </div>
     </div>`;
 
-  document.getElementById('sim-gate-card').innerHTML=`
-    <div class="gate-progress">
-      <div class="gp-label">gates concluídos</div>
-      <div class="gp-count"><em>${done}</em> / ${total}</div>
-    </div>
-    <div class="gp-bar"><div class="gp-fill" style="width:${Math.round(done/total*100)}%"></div></div>
-    <div style="padding:0 1.1rem .5rem">
-      ${p.gates.map((gate,i)=>`
-        <div class="gate-row">
-          <div class="gate-chk ${g[i]?'on':''}" onclick="toggleSimGate(${i})"></div>
-          <div class="gate-main">
-            <div class="gate-text ${g[i]?'struck':''}">${gate.text}</div>
-            <div class="gate-why">${gate.why}</div>
-          </div>
-        </div>`).join('')}
-    </div>`;
+  // gate card renderizado por renderSimGateCard()
 
   document.getElementById('sim-doc-card').innerHTML=`
     <div class="card-body">
@@ -808,30 +790,8 @@ function renderSimPhase(){
       <div style="font-size:11px;color:var(--t3);margin-top:.5rem;font-style:italic">Tudo fica salvo no cache do seu navegador. Ao concluir todas as fases, você pode baixar um PDF completo da sua documentação.</div>
     </div>`;
 
-  if(simPhase<PHASES.length-1){
-    // Mostrar PDF parcial se pelo menos 1 fase anterior concluída
-    const phasesCompleted = simGates.slice(0,simPhase+1).filter((g,i)=>i<simPhase&&g.every(Boolean)).length;
-    const pdfBtn = phasesCompleted>0
-      ? `<button onclick="exportSimPDF()" style="width:calc(100% - 2.2rem);display:block;margin:0 1.1rem .5rem;padding:11px;border-radius:10px;border:.5px solid var(--b2);background:transparent;color:var(--t2);font-size:13px;cursor:pointer">Baixar documento até aqui (${phasesCompleted} fase${phasesCompleted>1?'s':''} concluída${phasesCompleted>1?'s':''})</button>`
-      : '';
-    document.getElementById('sim-advance').innerHTML=
-      `<div style="padding:0 0 1.5rem">
-        <button class="btn-advance" style="width:calc(100% - 2.2rem);margin:0 1.1rem .65rem;display:block;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:500;cursor:pointer;background:var(--green);color:#000;opacity:${allDone?1:0.25}" ${allDone?'':'disabled'} onclick="advanceSim()">Concluir ${p.code} e avançar →</button>
-        ${pdfBtn}
-      </div>`;
-  } else {
-    document.getElementById('sim-advance').innerHTML=allDone
-      ?`<div style="padding:1rem 1.1rem 2rem">
-          <div style="background:var(--gd);border:.5px solid var(--gb);border-radius:10px;padding:1.1rem;margin-bottom:.85rem;text-align:center">
-            <div style="color:var(--green);font-family:var(--mono);font-size:11px;margin-bottom:.5rem">✓ todas as 6 fases concluídas</div>
-            <div style="font-size:14px;font-weight:500;margin-bottom:.35rem">Sua documentação SDD está pronta</div>
-            <div style="font-size:12px;color:var(--t2);line-height:1.5">Você percorreu a jornada completa e documentou cada fase. Baixe o PDF para guardar ou compartilhar sua documentação operacional.</div>
-          </div>
-          <button onclick="exportSimPDF()" style="width:100%;padding:13px;border-radius:10px;border:none;font-size:14px;font-weight:500;cursor:pointer;background:var(--green);color:#000;margin-bottom:8px">Baixar documentação em PDF</button>
-          <button class="btn-outline" onclick="resetSim()" style="width:100%;padding:12px;border-radius:10px;border:.5px solid var(--b2);background:transparent;color:var(--t2);font-size:14px;cursor:pointer">Reiniciar simulação</button>
-        </div>`
-      :`<div style="padding:0 1.1rem 1.5rem"><button style="width:100%;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:500;cursor:default;background:var(--green);color:#000;opacity:.25" disabled>Concluir ${p.code}</button></div>`;
-  }
+  renderSimGateCard(simPhase);
+  renderSimAdvance(simPhase);
 }
 function toggleSimGate(i){
   simGates[simPhase][i]=!simGates[simPhase][i];
@@ -840,47 +800,52 @@ function toggleSimGate(i){
 }
 function saveSimDoc(phIdx,key,val){
   simDocs[phIdx][key]=val;
-  _saveSim();
-  // Auto-check gate correspondente ao doc field (exceto último gate = aprovação manual)
+  // Auto-check gate correspondente (exceto último = aprovação manual)
   const p = PHASES[phIdx];
   const docIdx = p.docs.findIndex(d=>d.key===key);
-  if(docIdx>=0 && docIdx < p.gates.length-1){
-    const hasContent = val.trim().length > 10;
-    if(hasContent && !simGates[phIdx][docIdx]){
-      simGates[phIdx][docIdx] = true;
-      _saveSim();
-      // Atualizar visual do gate sem re-render completo
-      const chk = document.querySelector(`#sim-gate-card .gate-chk:nth-child(${docIdx+1} of .gate-chk)`);
-      refreshSimGates(phIdx);
-    }
+  if(docIdx>=0 && docIdx < p.gates.length-1 && val.trim().length>10){
+    simGates[phIdx][docIdx]=true;
   }
+  _saveSim();
+  // Re-render apenas o card de gates e o botão de avançar
+  renderSimGateCard(phIdx);
+  renderSimAdvance(phIdx);
 }
 
-function refreshSimGates(phIdx){
-  const p = PHASES[phIdx];
-  const g = simGates[phIdx];
-  const done = g.filter(Boolean).length;
-  const total = p.gates.length;
-  // Atualizar progress
-  const countEl = document.querySelector('#sim-gate-card .gp-count em');
-  const fillEl = document.querySelector('#sim-gate-card .gp-fill');
-  if(countEl) countEl.textContent = done;
-  if(fillEl) fillEl.style.width = Math.round(done/total*100)+'%';
-  // Atualizar cada gate
-  p.gates.forEach((_,i)=>{
-    const row = document.querySelectorAll('#sim-gate-card .gate-chk')[i];
-    const txt = document.querySelectorAll('#sim-gate-card .gate-text')[i];
-    if(row){
-      row.className = 'gate-chk' + (g[i]?' on':'');
-      row.onclick = ()=>toggleSimGate(i);
-    }
-    if(txt) txt.className = 'gate-text' + (g[i]?' struck':'');
-  });
-  // Atualizar botão de avançar
-  const allDone = done === total;
-  const btn = document.querySelector('#sim-advance button');
-  if(btn && !allDone){ btn.disabled=true; btn.style.opacity='0.25'; }
-  if(btn && allDone){ btn.disabled=false; btn.style.opacity='1'; }
+function renderSimGateCard(phIdx){
+  const p=PHASES[phIdx];
+  const g=simGates[phIdx];
+  const done=g.filter(Boolean).length;
+  const total=p.gates.length;
+  // gate card renderizado por renderSimGateCard()
+}
+
+function renderSimAdvance(phIdx){
+  const p=PHASES[phIdx];
+  const g=simGates[phIdx];
+  const allDone=g.every(Boolean);
+  const phasesCompleted=simGates.slice(0,phIdx).filter(pg=>pg.every(Boolean)).length;
+  const pdfBtn=phasesCompleted>0
+    ?`<button onclick="exportSimPDF()" style="width:calc(100% - 2.2rem);display:block;margin:0 1.1rem .5rem;padding:11px;border-radius:10px;border:.5px solid var(--b2);background:transparent;color:var(--t2);font-size:13px;cursor:pointer">Baixar documento até aqui (${phasesCompleted} fase${phasesCompleted>1?'s':''} concluída${phasesCompleted>1?'s':''})</button>`
+    :'';
+  if(phIdx<PHASES.length-1){
+    document.getElementById('sim-advance').innerHTML=`<div style="padding:0 0 1.5rem">
+      <button style="width:calc(100% - 2.2rem);margin:0 1.1rem .65rem;display:block;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:500;cursor:${allDone?'pointer':'default'};background:var(--green);color:#000;opacity:${allDone?1:0.25}" ${allDone?'':'disabled'} onclick="advanceSim()">Concluir ${p.code} e avançar →</button>
+      ${pdfBtn}
+    </div>`;
+  } else {
+    document.getElementById('sim-advance').innerHTML=allDone
+      ?`<div style="padding:1rem 1.1rem 2rem">
+          <div style="background:var(--gd);border:.5px solid var(--gb);border-radius:10px;padding:1.1rem;margin-bottom:.85rem;text-align:center">
+            <div style="color:var(--green);font-family:var(--mono);font-size:11px;margin-bottom:.5rem">✓ todas as 6 fases concluídas</div>
+            <div style="font-size:14px;font-weight:500;margin-bottom:.35rem">Sua documentação SDD está pronta</div>
+            <div style="font-size:12px;color:var(--t2);line-height:1.5">Você percorreu a jornada completa e documentou cada fase. Baixe o PDF com toda a sua documentação operacional.</div>
+          </div>
+          <button onclick="exportSimPDF()" style="width:100%;padding:13px;border-radius:10px;border:none;font-size:14px;font-weight:500;cursor:pointer;background:var(--green);color:#000;margin-bottom:8px">Baixar documentação completa em PDF</button>
+          <button onclick="resetSim()" style="width:100%;padding:12px;border-radius:10px;border:.5px solid var(--b2);background:transparent;color:var(--t2);font-size:14px;cursor:pointer">Reiniciar simulação</button>
+        </div>`
+      :`<div style="padding:0 1.1rem 1.5rem"><button style="width:100%;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:500;cursor:default;background:var(--green);color:#000;opacity:.25" disabled>Concluir ${p.code}</button></div>`;
+  }
 }
 function advanceSim(){
   if(!simGates[simPhase].every(Boolean))return;
