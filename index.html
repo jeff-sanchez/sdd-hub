@@ -809,7 +809,16 @@ function renderSimPhase(){
     </div>`;
 
   if(simPhase<PHASES.length-1){
-    document.getElementById('sim-advance').innerHTML=`<button class="btn-advance" style="width:calc(100% - 2.2rem);margin:0 1.1rem 1.5rem;display:block;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:500;cursor:pointer;background:var(--green);color:#000;opacity:${allDone?1:0.25}" ${allDone?'':'disabled'} onclick="advanceSim()">Concluir ${p.code} e avançar →</button>`;
+    // Mostrar PDF parcial se pelo menos 1 fase anterior concluída
+    const phasesCompleted = simGates.slice(0,simPhase+1).filter((g,i)=>i<simPhase&&g.every(Boolean)).length;
+    const pdfBtn = phasesCompleted>0
+      ? `<button onclick="exportSimPDF()" style="width:calc(100% - 2.2rem);display:block;margin:0 1.1rem .5rem;padding:11px;border-radius:10px;border:.5px solid var(--b2);background:transparent;color:var(--t2);font-size:13px;cursor:pointer">Baixar documento até aqui (${phasesCompleted} fase${phasesCompleted>1?'s':''} concluída${phasesCompleted>1?'s':''})</button>`
+      : '';
+    document.getElementById('sim-advance').innerHTML=
+      `<div style="padding:0 0 1.5rem">
+        <button class="btn-advance" style="width:calc(100% - 2.2rem);margin:0 1.1rem .65rem;display:block;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:500;cursor:pointer;background:var(--green);color:#000;opacity:${allDone?1:0.25}" ${allDone?'':'disabled'} onclick="advanceSim()">Concluir ${p.code} e avançar →</button>
+        ${pdfBtn}
+      </div>`;
   } else {
     document.getElementById('sim-advance').innerHTML=allDone
       ?`<div style="padding:1rem 1.1rem 2rem">
@@ -832,6 +841,46 @@ function toggleSimGate(i){
 function saveSimDoc(phIdx,key,val){
   simDocs[phIdx][key]=val;
   _saveSim();
+  // Auto-check gate correspondente ao doc field (exceto último gate = aprovação manual)
+  const p = PHASES[phIdx];
+  const docIdx = p.docs.findIndex(d=>d.key===key);
+  if(docIdx>=0 && docIdx < p.gates.length-1){
+    const hasContent = val.trim().length > 10;
+    if(hasContent && !simGates[phIdx][docIdx]){
+      simGates[phIdx][docIdx] = true;
+      _saveSim();
+      // Atualizar visual do gate sem re-render completo
+      const chk = document.querySelector(`#sim-gate-card .gate-chk:nth-child(${docIdx+1} of .gate-chk)`);
+      refreshSimGates(phIdx);
+    }
+  }
+}
+
+function refreshSimGates(phIdx){
+  const p = PHASES[phIdx];
+  const g = simGates[phIdx];
+  const done = g.filter(Boolean).length;
+  const total = p.gates.length;
+  // Atualizar progress
+  const countEl = document.querySelector('#sim-gate-card .gp-count em');
+  const fillEl = document.querySelector('#sim-gate-card .gp-fill');
+  if(countEl) countEl.textContent = done;
+  if(fillEl) fillEl.style.width = Math.round(done/total*100)+'%';
+  // Atualizar cada gate
+  p.gates.forEach((_,i)=>{
+    const row = document.querySelectorAll('#sim-gate-card .gate-chk')[i];
+    const txt = document.querySelectorAll('#sim-gate-card .gate-text')[i];
+    if(row){
+      row.className = 'gate-chk' + (g[i]?' on':'');
+      row.onclick = ()=>toggleSimGate(i);
+    }
+    if(txt) txt.className = 'gate-text' + (g[i]?' struck':'');
+  });
+  // Atualizar botão de avançar
+  const allDone = done === total;
+  const btn = document.querySelector('#sim-advance button');
+  if(btn && !allDone){ btn.disabled=true; btn.style.opacity='0.25'; }
+  if(btn && allDone){ btn.disabled=false; btn.style.opacity='1'; }
 }
 function advanceSim(){
   if(!simGates[simPhase].every(Boolean))return;
@@ -848,6 +897,13 @@ function resetSim(){
 function exportSimPDF(){
   const projectName = simProject.name || prompt('Nome do seu projeto (para o documento):','Meu Projeto SDD') || 'Meu Projeto SDD';
   const date = new Date().toLocaleDateString('pt-BR');
+  // Incluir fases que têm pelo menos algum conteúdo ou gate marcado
+  const fasesComConteudo = PHASES.filter((_,i)=>{
+    const hasGates = simGates[i].some(Boolean);
+    const hasDocs = Object.values(simDocs[i]||{}).some(v=>v.trim().length>0);
+    return hasGates || hasDocs;
+  });
+  if(!fasesComConteudo.length){showToast('Preencha pelo menos uma fase antes de exportar.');return;}
   let html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
   <title>Documentação SDD — ${projectName}</title>
   <style>
@@ -884,7 +940,8 @@ function exportSimPDF(){
     </div>`;
   }
 
-  PHASES.forEach((p,i)=>{
+  fasesComConteudo.forEach((p)=>{
+    const i = p.id;
     const gates = simGates[i];
     const docs = simDocs[i] || {};
     const doneCnt = gates.filter(Boolean).length;
