@@ -201,6 +201,14 @@ button,input,textarea,select{font-family:var(--sans)}
 .login-err{font-size:12px;color:var(--red);margin-top:.5rem;display:none}
 
 /* TOAST */
+.review-btn{background:transparent;border:.5px solid var(--b2);color:var(--t3);font-size:11px;font-family:var(--mono);padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .15s;margin-top:.4rem;display:inline-block}
+.review-btn:hover{border-color:var(--gb);color:var(--green)}
+.review-btn:disabled{opacity:.4;cursor:default}
+.review-panel{margin-top:.6rem;background:var(--s2);border:.5px solid var(--gb);border-radius:var(--r2);padding:.85rem 1rem;display:none}
+.review-panel.show{display:block}
+.review-panel-label{font-family:var(--mono);font-size:9px;color:var(--green);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem}
+.review-panel-text{font-size:12px;color:var(--t2);line-height:1.65;white-space:pre-wrap}
+.review-loading{font-family:var(--mono);font-size:11px;color:var(--t3)}
 .toast{position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%) translateY(16px);background:var(--s1);border:.5px solid var(--gb);color:var(--t1);padding:8px 18px;border-radius:100px;font-family:var(--mono);font-size:11px;white-space:nowrap;opacity:0;transition:all .25s;z-index:300;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -214,6 +222,7 @@ button,input,textarea,select{font-family:var(--sans)}
 .ps-chip.done{border-color:var(--gb);color:var(--green);background:var(--gd)}
 .ps-chip.active{border-color:var(--gb);color:var(--green)}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -786,6 +795,11 @@ function renderSimPhase(){
           <div class="doc-q">${d.q}</div>
           <div class="doc-hint">${d.hint}</div>
           <textarea class="doc-ta" id="sim-doc-${simPhase}-${d.key}" placeholder="${d.ph}" oninput="saveSimDoc(${simPhase},'${d.key}',this.value)" autocomplete="off" autocorrect="on" spellcheck="true">${simDocs[simPhase]?.[d.key]||''}</textarea>
+          <button class="review-btn" id="rbtn-${simPhase}-${d.key}" onclick="reviewField(${simPhase},'${d.key}',this)">◎ revisar com IA</button>
+          <div class="review-panel" id="rpanel-${simPhase}-${d.key}">
+            <div class="review-panel-label">análise crítica</div>
+            <div class="review-panel-text review-loading" id="rtext-${simPhase}-${d.key}"></div>
+          </div>
         </div>`).join('')}
       <div style="font-size:11px;color:var(--t3);margin-top:.5rem;font-style:italic">Tudo fica salvo no cache do seu navegador. Ao concluir todas as fases, você pode baixar um PDF completo da sua documentação.</div>
     </div>`;
@@ -800,14 +814,15 @@ function toggleSimGate(i){
 }
 function saveSimDoc(phIdx,key,val){
   simDocs[phIdx][key]=val;
-  // Auto-check gate correspondente (exceto último = aprovação manual)
+  // Auto-check: marca quando atinge threshold, NUNCA desmarca automaticamente
   const p = PHASES[phIdx];
   const docIdx = p.docs.findIndex(d=>d.key===key);
-  if(docIdx>=0 && docIdx < p.gates.length-1 && val.trim().length>10){
-    simGates[phIdx][docIdx]=true;
+  if(docIdx>=0 && docIdx < p.gates.length-1){
+    if(val.trim().length>=10 && !simGates[phIdx][docIdx]){
+      simGates[phIdx][docIdx]=true; // só marca, nunca desmarca
+    }
   }
   _saveSim();
-  // Re-render apenas o card de gates e o botão de avançar
   renderSimGateCard(phIdx);
   renderSimAdvance(phIdx);
 }
@@ -860,15 +875,132 @@ function resetSim(){
   showScreen('screen-sim-briefing');
 }
 function exportSimPDF(){
-  const projectName = simProject.name || prompt('Nome do seu projeto (para o documento):','Meu Projeto SDD') || 'Meu Projeto SDD';
+  const projectName = simProject.name || 'Meu Projeto SDD';
   const date = new Date().toLocaleDateString('pt-BR');
-  // Incluir fases que têm pelo menos algum conteúdo ou gate marcado
   const fasesComConteudo = PHASES.filter((_,i)=>{
     const hasGates = simGates[i].some(Boolean);
     const hasDocs = Object.values(simDocs[i]||{}).some(v=>v.trim().length>0);
     return hasGates || hasDocs;
   });
   if(!fasesComConteudo.length){showToast('Preencha pelo menos uma fase antes de exportar.');return;}
+  
+  // Usar jsPDF para gerar PDF real
+  if(typeof window.jspdf !== 'undefined' || typeof jspdf !== 'undefined'){
+    const {jsPDF} = window.jspdf || jspdf;
+    const doc = new jsPDF({orientation:'p',unit:'mm',format:'a4'});
+    const margin = 20;
+    const pageW = 210;
+    const contentW = pageW - margin*2;
+    let y = margin;
+    const lineH = 6;
+
+    function checkPage(needed=10){
+      if(y+needed > 280){doc.addPage();y=margin;}
+    }
+    function writeText(text,size,bold,color){
+      doc.setFontSize(size||11);
+      doc.setFont('helvetica', bold?'bold':'normal');
+      doc.setTextColor(color||'#1a1a1a');
+      const lines = doc.splitTextToSize(String(text||''), contentW);
+      checkPage(lines.length*lineH+4);
+      doc.text(lines, margin, y);
+      y += lines.length*lineH+2;
+    }
+    function writeLine(color){
+      checkPage(4);
+      doc.setDrawColor(color||'#e0e0e0');
+      doc.line(margin, y, pageW-margin, y);
+      y+=4;
+    }
+
+    // Capa
+    doc.setFillColor('#0c0c0c');
+    doc.rect(0,0,210,60,'F');
+    doc.setTextColor('#22c55e');
+    doc.setFontSize(10);
+    doc.setFont('helvetica','normal');
+    doc.text('SDD.HUB — Spec-Driven Development', margin, 20);
+    doc.setTextColor('#ffffff');
+    doc.setFontSize(20);
+    doc.setFont('helvetica','bold');
+    doc.text(projectName, margin, 35);
+    doc.setFontSize(10);
+    doc.setFont('helvetica','normal');
+    doc.setTextColor('#888888');
+    doc.text('Documentação gerada em '+date+' · jeff-sanchez.github.io/sdd-hub', margin, 50);
+    y = 75;
+
+    // Briefing
+    if(simProject.problem||simProject.goal){
+      writeText('BRIEFING DO PROJETO',9,true,'#22c55e');
+      y+=2; writeLine('#22c55e');
+      if(simProject.problem){writeText('Problema:',9,true,'#555');writeText(simProject.problem,10,false,'#1a1a1a');y+=2;}
+      if(simProject.goal){writeText('Objetivo:',9,true,'#555');writeText(simProject.goal,10,false,'#1a1a1a');y+=2;}
+      if(simProject.constraints){writeText('Restrições:',9,true,'#555');writeText(simProject.constraints,10,false,'#1a1a1a');y+=2;}
+      y+=4;
+    }
+
+    // Fases
+    fasesComConteudo.forEach(p=>{
+      const i=p.id;
+      const gates=simGates[i];
+      const docs=simDocs[i]||{};
+      checkPage(20);
+      writeText(p.code+': '+p.title.split('—')[1].trim(),13,true,'#1a1a1a');
+      y+=1; writeLine('#cccccc');
+      writeText(p.tagline,9,false,'#666666'); y+=3;
+
+      // Gates
+      writeText('Gates ('+gates.filter(Boolean).length+'/'+p.gates.length+')',9,true,'#555');
+      p.gates.forEach((g,gi)=>{
+        checkPage(8);
+        doc.setFontSize(9);
+        doc.setFont('helvetica','normal');
+        doc.setTextColor(gates[gi]?'#22c55e':'#aaaaaa');
+        doc.text(gates[gi]?'✓':'○', margin, y);
+        doc.setTextColor('#333333');
+        const lines=doc.splitTextToSize(g.text, contentW-8);
+        doc.text(lines, margin+6, y);
+        y+=lines.length*5+1;
+      });
+      y+=3;
+
+      // Docs
+      p.docs.forEach(d=>{
+        const val=docs[d.key]||'';
+        if(!val.trim())return;
+        checkPage(12);
+        writeText(d.q,9,true,'#555555');
+        doc.setFillColor('#f8f8f8');
+        const lines=doc.splitTextToSize(val,contentW-6);
+        const boxH=lines.length*5+6;
+        checkPage(boxH+4);
+        doc.setDrawColor('#22c55e');
+        doc.setLineWidth(0.8);
+        doc.line(margin, y, margin, y+boxH);
+        doc.setLineWidth(0.2);
+        doc.setTextColor('#333333');
+        doc.setFontSize(9);
+        doc.setFont('helvetica','normal');
+        doc.text(lines, margin+4, y+4);
+        y+=boxH+4;
+      });
+      y+=6;
+    });
+
+    // Rodapé última página
+    const pageCount=doc.internal.getNumberOfPages();
+    for(let pg=1;pg<=pageCount;pg++){
+      doc.setPage(pg);
+      doc.setFontSize(8);
+      doc.setTextColor('#aaaaaa');
+      doc.text('SDD Hub · '+projectName+' · '+date+' · Página '+pg+'/'+pageCount, margin, 290);
+    }
+
+    doc.save('documentacao-sdd-'+projectName.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')+'.pdf');
+    showToast('PDF gerado com sucesso.');
+    return;
+  }
   let html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
   <title>Documentação SDD — ${projectName}</title>
   <style>
@@ -1223,6 +1355,62 @@ async function addDecision(){
 // ─────────────────────────────────────
 // TOAST
 // ─────────────────────────────────────
+async function reviewField(phIdx, key, btn){
+  const val = document.getElementById('sim-doc-'+phIdx+'-'+key)?.value?.trim();
+  if(!val || val.length < 10){showToast('Escreva algo antes de revisar.');return;}
+  
+  const panel = document.getElementById('rpanel-'+phIdx+'-'+key);
+  const textEl = document.getElementById('rtext-'+phIdx+'-'+key);
+  panel.classList.add('show');
+  textEl.textContent = 'analisando...';
+  btn.disabled = true;
+
+  const p = PHASES[phIdx];
+  const docDef = p.docs.find(d=>d.key===key);
+  const projCtx = simProject.name ? `Projeto: ${simProject.name}
+Problema: ${simProject.problem}
+Objetivo: ${simProject.goal}` : 'Projeto em simulação SDD';
+
+  const prompt = `Você é um especialista em Spec-Driven Development (SDD) e engenharia de software.
+
+Contexto do projeto:
+${projCtx}
+
+Fase atual: ${p.title}
+Campo: ${docDef?.q || key}
+
+Conteúdo preenchido pelo usuário:
+"${val}"
+
+Faça uma análise crítica e construtiva deste campo em até 5 pontos curtos:
+1. O que está bom e por quê
+2. O que está vago, inconsistente ou pode gerar problemas futuros
+3. O que está faltando que é importante para esta fase do SDD
+4. Um exemplo concreto de como melhorar o ponto mais fraco
+5. Uma pergunta que o usuário deveria se fazer antes de avançar
+
+Seja direto, específico e útil. Não elogie genericamente. Responda em português.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await res.json();
+    const text = data?.content?.[0]?.text || 'Não foi possível obter análise.';
+    textEl.textContent = text;
+  } catch(e){
+    textEl.textContent = 'Erro ao conectar com a IA. Tente novamente.';
+  }
+  btn.disabled = false;
+  btn.textContent = '◎ revisar novamente';
+}
+
 function showToast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg;t.classList.add('show');
