@@ -42,7 +42,7 @@ button,input,textarea,select{font-family:var(--sans)}
 .screen.active{display:flex}
 
 /* SCROLLABLE CONTENT */
-.scrollable{flex:1;overflow-y:auto;padding:1.1rem;padding-bottom:6rem}
+.scrollable{flex:1;overflow-y:auto;padding:1.1rem;padding-bottom:6rem;-webkit-overflow-scrolling:touch}
 .scrollable::-webkit-scrollbar{display:none}
 
 /* SECTION TITLE */
@@ -111,7 +111,7 @@ button,input,textarea,select{font-family:var(--sans)}
 .doc-field:last-child{margin-bottom:0}
 .doc-q{font-size:13px;font-weight:500;color:var(--t1);margin-bottom:.2rem}
 .doc-hint{font-size:11px;color:var(--t3);margin-bottom:.5rem;line-height:1.5}
-.doc-ta{width:100%;background:var(--s2);border:.5px solid var(--b2);border-radius:var(--r2);padding:.75rem .9rem;color:var(--t1);font-size:13px;line-height:1.6;resize:vertical;min-height:75px;outline:none;transition:border-color .15s}
+.doc-ta{width:100%;background:var(--s2);border:.5px solid var(--b2);border-radius:var(--r2);padding:.75rem .9rem;color:var(--t1);font-size:13px;line-height:1.6;resize:vertical;min-height:90px;outline:none;transition:border-color .15s;touch-action:manipulation;-webkit-user-select:text;user-select:text;cursor:text}
 .doc-ta:focus{border-color:var(--gb)}
 .doc-ta::placeholder{color:var(--t4)}
 .doc-ta[readonly]{color:var(--t3);cursor:default}
@@ -267,8 +267,8 @@ button,input,textarea,select{font-family:var(--sans)}
   <div class="screen" id="screen-sim">
     <div class="scrollable">
       <div class="screen-title">Simulador<br><strong>interativo</strong></div>
-      <div class="screen-sub">Experimente o fluxo SDD completo com um projeto fictício. Nenhum dado é salvo — é um ambiente de aprendizado.</div>
-      <div class="sim-badge">modo simulação — projeto fictício — nada é salvo</div>
+      <div class="screen-sub">Experimente o fluxo SDD completo com um projeto fictício. Tudo que você preencher fica salvo no cache do seu browser — se sair e voltar, encontra onde parou.</div>
+      <div class="sim-badge">modo simulação — projeto fictício — salvo no seu navegador</div>
 
       <div class="sim-phase-tabs" id="sim-phase-tabs"></div>
 
@@ -728,7 +728,7 @@ function renderSimPhase(){
         <div class="doc-field">
           <div class="doc-q">${d.q}</div>
           <div class="doc-hint">${d.hint}</div>
-          <textarea class="doc-ta" id="sim-doc-${simPhase}-${d.key}" placeholder="${d.ph}" oninput="saveSimDoc(${simPhase},'${d.key}',this.value)">${simDocs[simPhase]?.[d.key]||''}</textarea>
+          <textarea class="doc-ta" id="sim-doc-${simPhase}-${d.key}" placeholder="${d.ph}" oninput="saveSimDoc(${simPhase},'${d.key}',this.value)" autocomplete="off" autocorrect="on" spellcheck="true">${simDocs[simPhase]?.[d.key]||''}</textarea>
         </div>`).join('')}
       <div style="font-size:11px;color:var(--t3);margin-top:.5rem;font-style:italic">Tudo fica salvo no cache do seu navegador. Ao concluir todas as fases, você pode baixar um PDF completo da sua documentação.</div>
     </div>`;
@@ -1128,6 +1128,13 @@ function showToast(msg){
 renderGuide();
 renderSim();
 if(sessionStorage.getItem('sdd-auth'))setPrivate(true);
+
+// Fix: prevent scroll container from stealing touch events on textareas/inputs
+document.addEventListener('touchstart', function(e){
+  if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT'){
+    e.stopPropagation();
+  }
+}, {capture:true, passive:true});
 </script>
 </body>
 </html>
