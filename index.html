@@ -522,8 +522,26 @@ const SIM = {
     5:'O deploy revelou que 30% dos pacientes preferiram continuar ligando. Isso vira requisito do próximo ciclo: hybrid flow.'
   }
 };
-let simGates = PHASES.map(p=>new Array(p.gates.length).fill(false));
-let simPhase = 0;
+const SIM_KEY = 'sdd-sim-v1';
+function _simDefaults(){
+  return {
+    simPhase: 0,
+    simGates: PHASES.map(p=>new Array(p.gates.length).fill(false)),
+    simDocs: PHASES.map(p=>{const o={};p.docs.forEach(d=>o[d.key]='');return o;})
+  };
+}
+function _loadSim(){
+  try{ const s=localStorage.getItem(SIM_KEY); return s?JSON.parse(s):_simDefaults(); }
+  catch(e){ return _simDefaults(); }
+}
+function _saveSim(){
+  try{ localStorage.setItem(SIM_KEY,JSON.stringify({simPhase,simGates,simDocs})); }
+  catch(e){}
+}
+const _s = _loadSim();
+let simPhase = _s.simPhase;
+let simGates = _s.simGates;
+let simDocs  = _s.simDocs;
 
 // ─────────────────────────────────────
 // STATE
@@ -705,37 +723,114 @@ function renderSimPhase(){
 
   document.getElementById('sim-doc-card').innerHTML=`
     <div class="card-body">
-      <div style="font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.85rem">Exemplo de documentação desta fase</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.85rem">Documente esta fase</div>
       ${p.docs.map(d=>`
         <div class="doc-field">
           <div class="doc-q">${d.q}</div>
           <div class="doc-hint">${d.hint}</div>
-          <textarea class="doc-ta" readonly placeholder="${d.ph}" style="color:var(--t3);cursor:default">${d.ph.substring(0,120)}...</textarea>
+          <textarea class="doc-ta" id="sim-doc-${simPhase}-${d.key}" placeholder="${d.ph}" oninput="saveSimDoc(${simPhase},'${d.key}',this.value)">${simDocs[simPhase]?.[d.key]||''}</textarea>
         </div>`).join('')}
-      <div style="font-size:11px;color:var(--t3);margin-top:.5rem;font-style:italic">No painel privado, estes campos são editáveis e salvos automaticamente no Supabase.</div>
+      <div style="font-size:11px;color:var(--t3);margin-top:.5rem;font-style:italic">Tudo fica salvo no cache do seu navegador. Ao concluir todas as fases, você pode baixar um PDF completo da sua documentação.</div>
     </div>`;
 
   if(simPhase<PHASES.length-1){
-    document.getElementById('sim-advance').innerHTML=`<button class="btn btn-advance btn-green" style="width:calc(100% - 2.2rem);margin:0 1.1rem 1.5rem" ${allDone?'':'disabled'} onclick="advanceSim()">Concluir ${p.code} e avançar →</button>`;
+    document.getElementById('sim-advance').innerHTML=`<button class="btn-advance" style="width:calc(100% - 2.2rem);margin:0 1.1rem 1.5rem;display:block;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:500;cursor:pointer;background:var(--green);color:#000;opacity:${allDone?1:0.25}" ${allDone?'':'disabled'} onclick="advanceSim()">Concluir ${p.code} e avançar →</button>`;
   } else {
     document.getElementById('sim-advance').innerHTML=allDone
-      ?`<div style="text-align:center;padding:1.5rem 1.1rem;color:var(--green);font-family:var(--mono);font-size:12px">✓ Simulação concluída — todas as 6 fases do SDD!<br><br><button class="btn btn-outline" style="width:auto;padding:9px 20px;margin:0" onclick="resetSim()">Reiniciar simulação</button></div>`
-      :`<button class="btn btn-advance btn-green" style="width:calc(100% - 2.2rem);margin:0 1.1rem 1.5rem" disabled>Concluir ${p.code}</button>`;
+      ?`<div style="padding:1rem 1.1rem 2rem">
+          <div style="background:var(--gd);border:.5px solid var(--gb);border-radius:10px;padding:1.1rem;margin-bottom:.85rem;text-align:center">
+            <div style="color:var(--green);font-family:var(--mono);font-size:11px;margin-bottom:.5rem">✓ todas as 6 fases concluídas</div>
+            <div style="font-size:14px;font-weight:500;margin-bottom:.35rem">Sua documentação SDD está pronta</div>
+            <div style="font-size:12px;color:var(--t2);line-height:1.5">Você percorreu a jornada completa e documentou cada fase. Baixe o PDF para guardar ou compartilhar sua documentação operacional.</div>
+          </div>
+          <button onclick="exportSimPDF()" style="width:100%;padding:13px;border-radius:10px;border:none;font-size:14px;font-weight:500;cursor:pointer;background:var(--green);color:#000;margin-bottom:8px">Baixar documentação em PDF</button>
+          <button class="btn-outline" onclick="resetSim()" style="width:100%;padding:12px;border-radius:10px;border:.5px solid var(--b2);background:transparent;color:var(--t2);font-size:14px;cursor:pointer">Reiniciar simulação</button>
+        </div>`
+      :`<div style="padding:0 1.1rem 1.5rem"><button style="width:100%;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:500;cursor:default;background:var(--green);color:#000;opacity:.25" disabled>Concluir ${p.code}</button></div>`;
   }
 }
 function toggleSimGate(i){
   simGates[simPhase][i]=!simGates[simPhase][i];
+  _saveSim();
   renderSimPhase();
+}
+function saveSimDoc(phIdx,key,val){
+  simDocs[phIdx][key]=val;
+  _saveSim();
 }
 function advanceSim(){
   if(!simGates[simPhase].every(Boolean))return;
   simPhase++;
+  _saveSim();
   renderSim();
 }
 function resetSim(){
-  simGates=PHASES.map(p=>new Array(p.gates.length).fill(false));
-  simPhase=0;
+  localStorage.removeItem(SIM_KEY);
+  const d=_simDefaults();
+  simPhase=d.simPhase; simGates=d.simGates; simDocs=d.simDocs;
   renderSim();
+}
+function exportSimPDF(){
+  const projectName = prompt('Nome do seu projeto (para o documento):','Meu Projeto SDD') || 'Meu Projeto SDD';
+  const date = new Date().toLocaleDateString('pt-BR');
+  let html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+  <title>Documentação SDD — ${projectName}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Georgia,serif;color:#1a1a1a;padding:2.5cm;font-size:11pt;line-height:1.6}
+    h1{font-size:22pt;font-weight:700;margin-bottom:.25rem}
+    .subtitle{font-size:11pt;color:#555;margin-bottom:2rem}
+    .meta{font-size:9pt;color:#888;margin-bottom:2.5rem;padding-bottom:1rem;border-bottom:1px solid #ddd}
+    h2{font-size:14pt;font-weight:700;margin:2rem 0 .5rem;padding-top:1rem;border-top:2px solid #1a1a1a}
+    h3{font-size:11pt;font-weight:700;margin:1.2rem 0 .3rem;color:#333}
+    p{margin-bottom:.75rem}
+    .field{margin-bottom:1.25rem}
+    .field-label{font-size:9pt;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:.2rem}
+    .field-value{font-size:10.5pt;white-space:pre-wrap;background:#f8f8f8;border-left:3px solid #22c55e;padding:.6rem .85rem;border-radius:0 4px 4px 0}
+    .field-value.empty{color:#aaa;font-style:italic}
+    .gate{display:flex;gap:.6rem;margin-bottom:.5rem;align-items:flex-start}
+    .gate-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;margin-top:2px}
+    .gate-dot.done{background:#22c55e}
+    .gate-dot.not{background:#e5e5e5;border:1.5px solid #ccc}
+    .footer{margin-top:3rem;padding-top:1rem;border-top:1px solid #ddd;font-size:9pt;color:#aaa;text-align:center}
+    @media print{body{padding:1.5cm}h2{page-break-before:auto}}
+  </style></head><body>
+  <h1>Documentação SDD</h1>
+  <div class="subtitle">${projectName}</div>
+  <div class="meta">Gerado em ${date} via SDD Hub &nbsp;·&nbsp; Metodologia Spec-Driven Development &nbsp;·&nbsp; jeff-sanchez.github.io/sdd-hub</div>`;
+
+  PHASES.forEach((p,i)=>{
+    const gates = simGates[i];
+    const docs = simDocs[i] || {};
+    const doneCnt = gates.filter(Boolean).length;
+    html += `<h2>${p.code}: ${p.title.split('—')[1].trim()}</h2>`;
+    html += `<p style="color:#555;font-size:10pt">${p.tagline}</p>`;
+    html += `<h3>Checklist de gates (${doneCnt}/${gates.length} concluídos)</h3>`;
+    p.gates.forEach((g,gi)=>{
+      html += `<div class="gate"><div class="gate-dot ${gates[gi]?'done':'not'}"></div><div style="font-size:10pt">${g.text}</div></div>`;
+    });
+    html += `<h3 style="margin-top:1.1rem">Documentação</h3>`;
+    p.docs.forEach(d=>{
+      const val = docs[d.key] || '';
+      html += `<div class="field">
+        <div class="field-label">${d.q}</div>
+        <div class="field-value ${val?'':'empty'}">${val || 'Não preenchido'}</div>
+      </div>`;
+    });
+  });
+
+  html += `<div class="footer">Documento gerado pelo SDD Hub · Spec-Driven Development · ${date}</div></body></html>`;
+
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'documentacao-sdd-' + projectName.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'') + '.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Documento baixado. Abra no browser e use Ctrl+P para salvar como PDF.');
 }
 
 // ─────────────────────────────────────
